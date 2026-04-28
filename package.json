@@ -12,6 +12,7 @@
   "dependencies": {
     "apexcharts": "^5.2.0",
     "classnames": "^2.5.1",
+    "firebase": "^12.11.0",
     "lucide-react": "^0.575.0",
     "react": "^19.1.0",
     "react-apexcharts": "^1.7.0",
@@ -20,6 +21,7 @@
     "react-indiana-drag-scroll": "^2.2.1",
     "react-router-dom": "^7.6.3",
     "react-window": "^2.2.7",
+    "recharts": "^3.8.1",
     "recoil": "^0.7.7",
     "xlsx": "^0.18.5"
   },
