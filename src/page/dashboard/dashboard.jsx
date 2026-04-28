@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import ReactApexChart from "react-apexcharts";
 import { toast, Toaster } from "react-hot-toast";
@@ -13,7 +13,9 @@ import { DashboardView } from "./components/DashboardView";
 import { LeadsTableView } from "./components/LeadsTableView";
 import { SourceAnalysisView } from "./components/SourceAnalysisView";
 import { ShivirAnalysisView } from "./components/ShivirAnalysisView";
+import { ExcelGridView } from "./components/ExcelGridView";
 import { isNumeric, getColName } from "./utils";
+import { saveExcelToCloud, loadExcelFromCloud, deleteExcelFromCloud } from "../../lib/db";
 
 /** ==================== MAIN COMPONENT ==================== */
 
@@ -34,6 +36,65 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [globalMonth, setGlobalMonth] = useState("All");
   const [globalSearch, setGlobalSearch] = useState("");
+  const firebaseSaveTimer = useRef(null);
+
+  // ─ Load saved state on mount: localStorage first (fast), then Firebase fallback ─
+  useEffect(() => {
+    const loadState = async () => {
+      // Try localStorage first
+      try {
+        const saved = localStorage.getItem('tgf_excel_state');
+        if (saved) {
+          const s = JSON.parse(saved);
+          if (s.data && s.data.length > 0) {
+            setData(s.data);
+            setColumns(s.columns || []);
+            setColsMap(s.colsMap || null);
+            setFileName(s.fileName || "");
+            setActiveSheet(s.activeSheet || "");
+            setActiveTab("excel");
+            return;
+          }
+        }
+      } catch (e) {}
+      // Fallback: load from Firebase
+      try {
+        const cloud = await loadExcelFromCloud();
+        if (cloud && cloud.data && cloud.data.length > 0) {
+          setData(cloud.data);
+          setColumns(cloud.columns || []);
+          setColsMap(cloud.colsMap || null);
+          setFileName(cloud.fileName || "");
+          setActiveSheet(cloud.activeSheet || "");
+          setActiveTab("excel");
+        }
+      } catch (e) {
+        console.warn("Firebase load failed:", e.message);
+      }
+    };
+    loadState();
+  }, []);
+
+  // ─ Auto-save: localStorage (instant) + Firebase (debounced 2s) ─
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+    // localStorage — instant
+    try {
+      localStorage.setItem('tgf_excel_state', JSON.stringify({
+        data, columns, colsMap, fileName, activeSheet
+      }));
+    } catch (e) {}
+    // Firebase — debounced to minimize writes
+    if (firebaseSaveTimer.current) clearTimeout(firebaseSaveTimer.current);
+    firebaseSaveTimer.current = setTimeout(async () => {
+      try {
+        await saveExcelToCloud({ data, columns, colsMap, fileName, activeSheet });
+      } catch (e) {
+        console.warn("Firebase save failed:", e.message);
+      }
+    }, 2000);
+    return () => { if (firebaseSaveTimer.current) clearTimeout(firebaseSaveTimer.current); };
+  }, [data, columns, colsMap, fileName, activeSheet]);
 
   const handleSheetSwitch = useCallback((sheetName, wbkData) => {
     const rawData = wbkData || workbookData;
@@ -44,20 +105,43 @@ export default function Dashboard() {
 
     if (json.length > 0) {
       const cols = Object.keys(json[0]);
-      setColumns(cols);
+      let finalCols = [...cols];
+      
+      const attMap = getColName(cols, ["attendy", "caller"]) || cols[1] || "";
+      const callTypeMap = getColName(cols, ["call type", "type"]);
+      const nameMap = getColName(cols, ["name", "lead"]) || cols[3] || "";
+      const phoneMap = getColName(cols, ["cont no", "phone", "number"]) || cols[4] || "";
+      const cityMap = getColName(cols, ["khoji", "new", "city"]);
+      const sourceMap = getColName(cols, ["sourse", "source", "from"]);
+      const shivirMap = getColName(cols, ["shivir"]) || cols[7] || "";
+      const monthMap = getColName(cols, ["month"]) || cols[8] || "";
+      const statusMap = getColName(cols, ["status", "lead status", "state"]);
+      const actionMap = getColName(cols, ["action", "next action", "remark", "followup", "follow up"]);
+      const feedbackMap = getColName(cols, ["feedback"]) || "";
+      const calledForMap = getColName(cols, ["called for", "call for", "purpose"]);
+
+      const ensureCol = (mapVal, defaultName) => {
+          if (mapVal) return mapVal;
+          finalCols.push(defaultName);
+          return defaultName;
+      };
 
       const mapped = {
-        attendyCol: getColName(cols, ["attendy", "caller"]) || cols[1] || "",
-        callTypeCol: getColName(cols, ["call type", "type"]) || cols[2] || "",
-        nameCol: getColName(cols, ["name", "lead"]) || cols[3] || "",
-        phoneCol: getColName(cols, ["cont no", "phone", "number"]) || cols[4] || "",
-        cityCol: getColName(cols, ["khoji", "new", "city"]) || cols[5] || "",
-        sourceCol: getColName(cols, ["sourse", "source", "from"]) || cols[6] || "",
-        shivirCol: getColName(cols, ["shivir"]) || cols[7] || "",
-        monthCol: getColName(cols, ["month"]) || cols[8] || "",
-        statusCol: getColName(cols, ["status", "lead status", "state"]) || "",
-        actionCol: getColName(cols, ["action", "next action", "remark", "followup", "follow up"]) || "",
+        attendyCol: attMap,
+        callTypeCol: ensureCol(callTypeMap, "Call Type"),
+        nameCol: nameMap,
+        phoneCol: phoneMap,
+        cityCol: ensureCol(cityMap, "City"),
+        sourceCol: ensureCol(sourceMap, "Source"),
+        shivirCol: shivirMap,
+        monthCol: monthMap,
+        statusCol: ensureCol(statusMap, "Status"),
+        actionCol: ensureCol(actionMap, "Action"),
+        feedbackCol: feedbackMap,
+        calledForCol: ensureCol(calledForMap, "Called For"),
       };
+
+      setColumns(finalCols);
 
       setColsMap(mapped);
       setData(json);
@@ -116,15 +200,49 @@ export default function Dashboard() {
     reader.readAsBinaryString(file);
   }, [handleSheetSwitch]);
 
-  const exportCurrentData = () => {
-    toast("No editing enabled. Download your original excel file instead.", { icon: "ℹ️" });
-  };
+  // --- Data mutation callbacks for Excel tab ---
+  const updateRow = useCallback((rowIndex, updatedRow) => {
+    setData(prev => {
+      const next = [...prev];
+      next[rowIndex] = updatedRow;
+      return next;
+    });
+  }, []);
+
+  const deleteRow = useCallback((rowIndex) => {
+    setData(prev => prev.filter((_, i) => i !== rowIndex));
+    toast.success('Row deleted');
+  }, []);
+
+  const addRow = useCallback(() => {
+    setData(prev => {
+      const empty = {};
+      columns.forEach(c => { empty[c] = ""; });
+      return [...prev, empty];
+    });
+    toast.success('New row added at the bottom');
+  }, [columns]);
+
+  const exportCurrentData = useCallback(() => {
+    if (!data || data.length === 0) {
+      toast.error('No data to export.');
+      return;
+    }
+    // Explicitly provide columns as headers so dynamically injected keys (Status, Action, etc)
+    // are strictly preserved in the final .xlsx regardless of missing attributes on data[0].
+    const ws = XLSX.utils.json_to_sheet(data, { header: columns });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, activeSheet || 'Sheet1');
+    XLSX.writeFile(wb, fileName ? `edited_${fileName}` : 'edited_data.xlsx');
+    toast.success('Exported successfully!');
+  }, [data, activeSheet, fileName, columns]);
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { id: "leads", label: "Leads Table", icon: <Table size={18} /> },
     { id: "source", label: "Source Analysis", icon: <PieChart size={18} /> },
     { id: "shivir", label: "Shivir Analysis", icon: <BarChart2 size={18} /> },
+    { id: "excel", label: "Excel", icon: <FileSpreadsheet size={18} /> },
   ];
 
   const availableMonths = useMemo(() => {
@@ -219,6 +337,8 @@ export default function Dashboard() {
                     setWorkbookData(null);
                     setSheetNames([]);
                     setActiveSheet("");
+                    try { localStorage.removeItem('tgf_excel_state'); } catch(e) {}
+                    deleteExcelFromCloud().catch(() => {});
                   }}
                 >
                   <div className="shrink-0"><Upload size={16} /></div>
@@ -255,6 +375,7 @@ export default function Dashboard() {
               {activeTab === "leads" && <LeadsTableView data={data} colsMap={colsMap} columns={columns} />}
               {activeTab === "source" && <SourceAnalysisView data={data} colsMap={colsMap} />}
               {activeTab === "shivir" && <ShivirAnalysisView data={data} colsMap={colsMap} />}
+              {activeTab === "excel" && <ExcelGridView data={data} colsMap={colsMap} columns={columns} updateRow={updateRow} deleteRow={deleteRow} addRow={addRow} exportData={exportCurrentData} />}
             </div>
           </main>
         </div>
