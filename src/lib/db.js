@@ -2,7 +2,7 @@ import {
   collection, addDoc, getDocs, getDoc, doc, setDoc,
   updateDoc, deleteDoc, query, where,
   serverTimestamp, writeBatch, onSnapshot,
-  limit, Timestamp, runTransaction
+  limit, Timestamp, runTransaction, arrayUnion
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -31,7 +31,7 @@ export const deleteProgram = async (id) => {
 // ─────────────────────────────────────────────
 // CONTACTS (MASTER POOL - CHUNKED FOR FREE TIER)
 // ─────────────────────────────────────────────
-export const importContacts = async (programId, programName, rows) => {
+export const importContacts = async (programId, programName, rows, subPrograms = null) => {
   // Free tier massively limits writes (20k/day).
   // We chunk 500 contacts into a SINGLE document. 
   // An Excel sheet of 20,000 rows only uses 40 database writes!
@@ -40,16 +40,35 @@ export const importContacts = async (programId, programName, rows) => {
   let imported = 0;
   const queueIndexOffset = Date.now();
 
+  // Group rows by sub-program to prevent chunk starvation
+  const rowsBySub = {};
+  rows.forEach(r => {
+    const sp = r["Sub Program"] || "";
+    if (!rowsBySub[sp]) rowsBySub[sp] = [];
+    rowsBySub[sp].push(r);
+  });
+
   // Build all chunk operations first
   const chunkOps = [];
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunkRows = rows.slice(i, i + chunkSize);
-    const formattedContacts = chunkRows.map((r, idx) => ({
-      ...r,
-      _contactRefId: `C_${queueIndexOffset}_${i + idx}`, // Unique virtual ID
-    }));
-    chunkOps.push({ chunkIndex: queueIndexOffset + i, contacts: formattedContacts, count: chunkRows.length });
-  }
+  let rowOffset = 0;
+  
+  Object.keys(rowsBySub).forEach(sp => {
+    const spRows = rowsBySub[sp];
+    for (let i = 0; i < spRows.length; i += chunkSize) {
+      const chunkRows = spRows.slice(i, i + chunkSize);
+      const formattedContacts = chunkRows.map((r, idx) => ({
+        ...r,
+        _contactRefId: `C_${queueIndexOffset}_${rowOffset + idx}`, // Unique virtual ID
+      }));
+      chunkOps.push({ 
+        chunkIndex: queueIndexOffset + rowOffset, 
+        subProgram: sp, // Tag the chunk
+        contacts: formattedContacts, 
+        count: chunkRows.length 
+      });
+      rowOffset += chunkRows.length;
+    }
+  });
 
   // Split into multiple batches to respect Firebase's 500 ops/batch limit
   for (let batchStart = 0; batchStart < chunkOps.length; batchStart += MAX_BATCH_OPS) {
@@ -58,7 +77,7 @@ export const importContacts = async (programId, programName, rows) => {
 
     batchSlice.forEach(op => {
       const ref = doc(collection(db, "programQueues", programId, "chunks"));
-      batch.set(ref, { chunkIndex: op.chunkIndex, contacts: op.contacts });
+      batch.set(ref, { chunkIndex: op.chunkIndex, subProgram: op.subProgram, contacts: op.contacts });
       imported += op.count;
     });
 
@@ -75,7 +94,11 @@ export const importContacts = async (programId, programName, rows) => {
   const progRef = doc(db, "programs", programId);
   const progSnap = await getDoc(progRef);
   if (progSnap.exists()) {
-    await updateDoc(progRef, { contactCount: (progSnap.data().contactCount || 0) + imported });
+    const updateData = { contactCount: (progSnap.data().contactCount || 0) + imported };
+    if (subPrograms && subPrograms.length > 0) {
+      updateData.subPrograms = arrayUnion(...subPrograms);
+    }
+    await updateDoc(progRef, updateData);
   }
 
   return imported;
@@ -163,7 +186,7 @@ export const deleteAttender = async (id) => {
 // ─────────────────────────────────────────────
 // QUEUE — Assign N contacts to attender
 // ─────────────────────────────────────────────
-export const assignContactsToAttender = async (programId, programName, attenderId, attenderName, count) => {
+export const assignContactsToAttender = async (programId, programName, attenderId, attenderName, count, subProgramName = null) => {
   // ⚠️ B1 KNOWN LIMITATION: The assignedPhones set is built before transactions.
   // If two admins assign contacts simultaneously, the same contact could be assigned twice.
   // A proper fix requires a server-side lock or an "isAssigned" field on each contact.
@@ -180,10 +203,19 @@ export const assignContactsToAttender = async (programId, programName, attenderI
   });
 
   // 2. Fetch chunks from the queue
-  const q = query(
-    collection(db, "programQueues", programId, "chunks"),
-    limit(5)
-  );
+  let q;
+  if (subProgramName) {
+    q = query(
+      collection(db, "programQueues", programId, "chunks"),
+      where("subProgram", "==", subProgramName),
+      limit(5)
+    );
+  } else {
+    q = query(
+      collection(db, "programQueues", programId, "chunks"),
+      limit(5)
+    );
+  }
   const snap = await getDocs(q);
   if (snap.empty) return 0;
 
@@ -212,6 +244,11 @@ export const assignContactsToAttender = async (programId, programName, attenderI
       const unique = [];
       const skipped = [];
       for (const contact of pool) {
+        if (subProgramName && contact["Sub Program"] !== subProgramName) {
+          skipped.push(contact); // wrong sub-program, skip it
+          continue;
+        }
+
         const phone = contact.Phone || contact["Cont No"] || contact.phone || contact.Number || contact.Mobile || "";
         const cleaned = String(phone).replace(/[\s\-\.\(\)\+]/g, "").trim();
         if (cleaned.length > 4 && assignedPhones.has(cleaned)) {

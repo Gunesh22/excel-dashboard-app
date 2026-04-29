@@ -592,6 +592,7 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
   const [programs, setPrograms] = useState([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [selectedProgramName, setSelectedProgramName] = useState("");
+  const [selectedSubProgram, setSelectedSubProgram] = useState("");
   const [callLogs, setCallLogs] = useState([]);
   const [editingRow, setEditingRow] = useState(null);
   const [isLoadingProgram, setIsLoadingProgram] = useState(false); // U1: skeleton state
@@ -656,6 +657,13 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
 
   const handleGetNumbers = async () => {
     if (!selectedProgramId) { toast.error("Select a program first."); return; }
+    
+    // Check if program has subPrograms and one is selected
+    const selectedProgram = programs.find(p => p.id === selectedProgramId);
+    if (selectedProgram?.subPrograms?.length > 0 && !selectedSubProgram) {
+      toast.error("Please select a specific sheet first."); 
+      return; 
+    }
     // U5 fix: Warn before re-requesting if the sheet already has entries
     if (callLogs.length > 0) {
       if (!window.confirm(`You already have ${callLogs.length} entries in this sheet.\nGet ${requestCount} more contacts?`)) return;
@@ -663,7 +671,7 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
     setIsRequesting(true);
     try {
       const assigned = await assignContactsToAttender(
-        selectedProgramId, selectedProgramName, attenderId, attenderName, requestCount
+        selectedProgramId, selectedProgramName, attenderId, attenderName, requestCount, selectedSubProgram
       );
       if (assigned === 0) toast.error("No more available contacts in this program!");
       else {
@@ -892,12 +900,27 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
                 setSelectedProgramId(e.target.value);
                 const p = programs.find(p => p.id === e.target.value);
                 setSelectedProgramName(p?.name || "");
+                setSelectedSubProgram(""); // Reset sub-program when program changes
               }}
               className="bg-transparent text-sm font-semibold text-blue-700 focus:outline-none cursor-pointer"
             >
               <option value="">Pick program...</option>
               {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
+            
+            {/* Show sub-programs dropdown only if the selected program has them */}
+            {programs.find(p => p.id === selectedProgramId)?.subPrograms?.length > 0 && (
+              <select
+                value={selectedSubProgram}
+                onChange={e => setSelectedSubProgram(e.target.value)}
+                className="bg-transparent text-sm font-semibold text-blue-700 focus:outline-none cursor-pointer border-l border-blue-200 pl-2 ml-1"
+              >
+                <option value="" disabled hidden>Pick a sheet...</option>
+                {programs.find(p => p.id === selectedProgramId).subPrograms.map(sp => (
+                  <option key={sp} value={sp}>{sp}</option>
+                ))}
+              </select>
+            )}
             <div className="flex items-center gap-1 bg-white/50 rounded-lg px-1">
               <button onClick={() => setRequestCount(c => Math.max(5, c - 5))} className="w-5 h-5 flex items-center justify-center text-blue-600 hover:text-blue-900 font-bold text-sm">-</button>
               <span className="w-7 text-center font-bold text-sm text-blue-700">{requestCount}</span>

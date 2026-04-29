@@ -76,8 +76,8 @@ export default function AdminPanel({ onExit, onAttendersChange }) {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${activeTab === item.id
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                : "text-slate-400 hover:bg-slate-800 hover:text-white"
                 }`}
             >
               {item.icon}
@@ -485,9 +485,9 @@ function DashboardTab({ programs, attenders }) {
                     <div className="flex items-center gap-2 shrink-0">
                       {a.status && (
                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${a.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
-                            a.status === "Interested" ? "bg-blue-100 text-blue-700" :
-                              a.status === "Info given" ? "bg-purple-100 text-purple-700" :
-                                "bg-gray-100 text-gray-600"
+                          a.status === "Interested" ? "bg-blue-100 text-blue-700" :
+                            a.status === "Info given" ? "bg-purple-100 text-purple-700" :
+                              "bg-gray-100 text-gray-600"
                           }`}>{a.status}</span>
                       )}
                       <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">{timeAgo(a.time)}</span>
@@ -510,6 +510,7 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
   const [isUploading, setIsUploading] = useState(null);
   const [stats, setStats] = useState({});
   const [expandedProgram, setExpandedProgram] = useState(null);
+  const [pendingUpload, setPendingUpload] = useState(null);
 
   useEffect(() => {
     programs.forEach(async p => {
@@ -544,27 +545,53 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
   const handleFileUpload = async (e, program) => {
     const file = e.target.files[0];
     if (!file) return;
-    setIsUploading(program.id);
+    
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
         const wb = XLSX.read(evt.target.result, { type: "binary", cellDates: true });
-        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw: false, defval: "" });
-        if (json.length === 0) { toast.error("Empty sheet!"); return; }
-        const imported = await importContacts(program.id, program.name, json);
-        toast.success(`Imported ${imported} contacts into "${program.name}"!`);
-        const s = await getProgramContactStats(program.id);
-        setStats(prev => ({ ...prev, [program.id]: s }));
+        setPendingUpload({
+          program,
+          wb,
+          sheetNames: wb.SheetNames,
+          selectedSheets: [wb.SheetNames[0]]
+        });
       } catch (err) {
-        toast.error("Import failed.");
-      } finally {
-        setIsUploading(null);
-        e.target.value = null;
+        toast.error("Failed to parse Excel file.");
       }
+      e.target.value = null; // reset input
     };
-    setTimeout(() => {
-      reader.readAsBinaryString(file);
-    }, 50);
+    reader.readAsBinaryString(file);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingUpload) return;
+    setIsUploading(pendingUpload.program.id);
+    const { program, wb, selectedSheets } = pendingUpload;
+    setPendingUpload(null);
+
+    try {
+      let combinedJson = [];
+      selectedSheets.forEach(sheetName => {
+        const json = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { raw: false, defval: "" });
+        const sheetJson = json.map(row => ({
+          ...row,
+          "Sub Program": sheetName // Append sub program identifier
+        }));
+        combinedJson = combinedJson.concat(sheetJson);
+      });
+
+      if (combinedJson.length === 0) { toast.error("Empty sheets selected!"); return; }
+      
+      const imported = await importContacts(program.id, program.name, combinedJson, selectedSheets);
+      toast.success(`Imported ${imported} contacts into "${program.name}"!`);
+      const s = await getProgramContactStats(program.id);
+      setStats(prev => ({ ...prev, [program.id]: s }));
+    } catch (err) {
+      toast.error("Import failed.");
+    } finally {
+      setIsUploading(null);
+    }
   };
 
   const handleExportExcel = async (program) => {
@@ -625,6 +652,43 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
 
   return (
     <div className="relative">
+      {pendingUpload && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)' }}>
+          <div style={{ backgroundColor: '#fff', padding: '2rem', borderRadius: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', width: '400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <h3 className="text-xl font-black text-slate-800 mb-2">Select Sheets to Import</h3>
+            <p className="text-sm text-slate-500 mb-4">File contains {pendingUpload.sheetNames.length} sheet(s). Select the ones you want to add to <strong>{pendingUpload.program.name}</strong>.</p>
+
+            <div className="overflow-y-auto space-y-2 mb-6 pr-2 custom-scrollbar flex-1">
+              {pendingUpload.sheetNames.map(sheet => (
+                <label key={sheet} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={pendingUpload.selectedSheets.includes(sheet)}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setPendingUpload(prev => ({
+                        ...prev,
+                        selectedSheets: isChecked
+                          ? [...prev.selectedSheets, sheet]
+                          : prev.selectedSheets.filter(s => s !== sheet)
+                      }))
+                    }}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="font-semibold text-sm text-slate-700">{sheet}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-3 mt-auto shrink-0">
+              <button onClick={() => setPendingUpload(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition">Cancel</button>
+              <button onClick={handleConfirmImport} disabled={pendingUpload.selectedSheets.length === 0} className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 transition">Import {pendingUpload.selectedSheets.length} Sheet(s)</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {isUploading && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)' }}>
           <div style={{ backgroundColor: '#fff', padding: '2rem', borderRadius: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '350px' }}>
@@ -1017,9 +1081,9 @@ function AttendersTab({ attenders, programs, onRefresh }) {
                           <td className="px-4 py-3 text-gray-400 text-xs font-bold">{i + 1}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${log.isHotLead ? "bg-orange-100 text-orange-700" :
-                                log.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
-                                  log.status === "Interested" ? "bg-blue-100 text-blue-700" :
-                                    log.status ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-400"
+                              log.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
+                                log.status === "Interested" ? "bg-blue-100 text-blue-700" :
+                                  log.status ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-400"
                               }`}>
                               {log.isHotLead && <Flame size={10} className="inline mr-1" fill="currentColor" />}
                               {log.status || "Pending"}
@@ -1612,13 +1676,13 @@ function MonthlyReportTab({ programs, attenders }) {
   // Attender totals footer
   const attTotals = attenderPerformance.length > 1
     ? attenderPerformance.reduce((acc, r) => ({
-        attempts: acc.attempts + r.attempts,
-        connected: acc.connected + r.connected,
-        notConnected: acc.notConnected + r.notConnected,
-        noAnswer: acc.noAnswer + r.noAnswer,
-        infoGiven: acc.infoGiven + r.infoGiven,
-        registrations: acc.registrations + r.registrations,
-      }), { attempts: 0, connected: 0, notConnected: 0, noAnswer: 0, infoGiven: 0, registrations: 0 })
+      attempts: acc.attempts + r.attempts,
+      connected: acc.connected + r.connected,
+      notConnected: acc.notConnected + r.notConnected,
+      noAnswer: acc.noAnswer + r.noAnswer,
+      infoGiven: acc.infoGiven + r.infoGiven,
+      registrations: acc.registrations + r.registrations,
+    }), { attempts: 0, connected: 0, notConnected: 0, noAnswer: 0, infoGiven: 0, registrations: 0 })
     : null;
 
   return (
@@ -1935,14 +1999,14 @@ function AbhivyaktiTab({ programs }) {
   const sourcePivot = React.useMemo(() => {
     const m = {};
     monthFiltered.forEach(r => {
-      const s = abvFindVal(r, ['source','sourse']); const p = r.programName || 'Unknown';
+      const s = abvFindVal(r, ['source', 'sourse']); const p = r.programName || 'Unknown';
       if (!m[s]) m[s] = {}; m[s][p] = (m[s][p] || 0) + 1;
     }); return m;
   }, [monthFiltered]);
   const khojiPivot = React.useMemo(() => {
     const m = {};
     monthFiltered.forEach(r => {
-      const k = abvFindVal(r, ['khoji/new','khoji','new']); const p = r.programName || 'Unknown';
+      const k = abvFindVal(r, ['khoji/new', 'khoji', 'new']); const p = r.programName || 'Unknown';
       if (!m[k]) m[k] = {}; m[k][p] = (m[k][p] || 0) + 1;
     }); return m;
   }, [monthFiltered]);
@@ -1956,14 +2020,14 @@ function AbhivyaktiTab({ programs }) {
   const abvAttenders = React.useMemo(() => {
     const m = {};
     monthFiltered.forEach(r => { const a = r.attenderName || 'Unknown'; m[a] = (m[a] || 0) + 1; });
-    return Object.entries(m).sort((a,b) => b[1]-a[1]);
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
   }, [monthFiltered]);
 
   const AbvPivotTable = ({ title, rowMap, colHeaders, color = 'indigo' }) => {
     const rows = Object.keys(rowMap).sort();
     const colTotals = {}; colHeaders.forEach(p => { colTotals[p] = 0; });
     rows.forEach(r => colHeaders.forEach(p => { colTotals[p] += (rowMap[r][p] || 0); }));
-    const grandTotal = Object.values(colTotals).reduce((a,b) => a+b, 0);
+    const grandTotal = Object.values(colTotals).reduce((a, b) => a + b, 0);
     const chip = color === 'emerald' ? 'text-emerald-700 bg-emerald-50' : color === 'amber' ? 'text-amber-700 bg-amber-50' : 'text-indigo-700 bg-indigo-50';
     return (
       <div className="space-y-3">
@@ -1976,12 +2040,13 @@ function AbhivyaktiTab({ programs }) {
               <th className="px-3 py-3 text-center text-[10px] font-black text-gray-800 uppercase bg-slate-100">Total</th>
             </tr></thead>
             <tbody className="divide-y divide-gray-50">
-              {rows.map((row, i) => { const rowTotal = colHeaders.reduce((sum,p) => sum+(rowMap[row][p]||0), 0); return (
-                <tr key={i} className={(i%2===0?'bg-white':'bg-gray-50/40')+' hover:bg-blue-50/20 transition-colors'}>
-                  <td className="px-4 py-2.5 font-black text-slate-700 whitespace-nowrap">{row}</td>
-                  {colHeaders.map(p => <td key={p} className="px-3 py-2.5 text-center">{rowMap[row][p] ? <span className={'px-2 py-0.5 rounded-lg font-black text-xs '+chip}>{rowMap[row][p]}</span> : <span className="text-gray-200">&mdash;</span>}</td>)}
-                  <td className="px-3 py-2.5 text-center font-black text-slate-800 bg-gray-50">{rowTotal}</td>
-                </tr>);
+              {rows.map((row, i) => {
+                const rowTotal = colHeaders.reduce((sum, p) => sum + (rowMap[row][p] || 0), 0); return (
+                  <tr key={i} className={(i % 2 === 0 ? 'bg-white' : 'bg-gray-50/40') + ' hover:bg-blue-50/20 transition-colors'}>
+                    <td className="px-4 py-2.5 font-black text-slate-700 whitespace-nowrap">{row}</td>
+                    {colHeaders.map(p => <td key={p} className="px-3 py-2.5 text-center">{rowMap[row][p] ? <span className={'px-2 py-0.5 rounded-lg font-black text-xs ' + chip}>{rowMap[row][p]}</span> : <span className="text-gray-200">&mdash;</span>}</td>)}
+                    <td className="px-3 py-2.5 text-center font-black text-slate-800 bg-gray-50">{rowTotal}</td>
+                  </tr>);
               })}
               <tr className="bg-slate-100 border-t-2 border-slate-200">
                 <td className="px-4 py-2.5 font-black text-slate-800 uppercase text-[10px]">Grand Total</td>
