@@ -1130,7 +1130,23 @@ const MonthlyTable = ({ heads, rows, footer }) => (
 );
 
 function MonthlyReportTab({ programs, attenders }) {
-  const [selectedProgramId, setSelectedProgramId] = useState("ALL");
+  const [selectedProgramIds, setSelectedProgramIds] = useState(["ALL"]);
+
+  const toggleProgram = (id) => {
+    if (id === "ALL") {
+      setSelectedProgramIds(["ALL"]);
+      return;
+    }
+    setSelectedProgramIds(prev => {
+      const withoutAll = prev.filter(x => x !== "ALL");
+      if (withoutAll.includes(id)) {
+        const next = withoutAll.filter(x => x !== id);
+        return next.length === 0 ? ["ALL"] : next;
+      } else {
+        return [...withoutAll, id];
+      }
+    });
+  };
   const [callLogs, setCallLogs] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -1140,18 +1156,22 @@ function MonthlyReportTab({ programs, attenders }) {
 
   useEffect(() => {
     if (unsubRef.current) unsubRef.current();
-    if (!selectedProgramId) return;
-    unsubRef.current = subscribeToAllCallLogs(selectedProgramId === "ALL" ? null : selectedProgramId, (logs) => {
+    unsubRef.current = subscribeToAllCallLogs(null, (logs) => {
       setCallLogs(logs.filter(l => !l._deleted));
     });
     return () => { if (unsubRef.current) unsubRef.current(); };
-  }, [selectedProgramId]);
+  }, []);
 
   // FIX #2: Use history entry timestamps for month filtering (not updatedAt which changes on edits)
   const monthLogs = React.useMemo(() => {
-    if (!selectedMonth) return callLogs;
+    let filtered = callLogs;
+    if (!selectedProgramIds.includes("ALL")) {
+      filtered = filtered.filter(l => selectedProgramIds.includes(l.programId));
+    }
+
+    if (!selectedMonth) return filtered;
     const [year, month] = selectedMonth.split("-").map(Number);
-    return callLogs.filter(l => {
+    return filtered.filter(l => {
       if (l.history && l.history.length > 0) {
         return l.history.some(h => {
           if (!h.timestamp) return false;
@@ -1163,7 +1183,7 @@ function MonthlyReportTab({ programs, attenders }) {
       if (!d) return true;
       return d.getFullYear() === year && d.getMonth() + 1 === month;
     });
-  }, [callLogs, selectedMonth]);
+  }, [callLogs, selectedMonth, selectedProgramIds]);
 
   // FIX #1 + #8: Extract attempts filtered to the selected month only
   const allAttempts = React.useMemo(() => {
@@ -1610,11 +1630,23 @@ function MonthlyReportTab({ programs, attenders }) {
           <p className="text-slate-400 text-xs mt-0.5">Attempts = every call made &nbsp;·&nbsp; Contacts = each person's final status</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <select value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)}
-            className="px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <option value="ALL">All Programs</option>
-            {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <div className="flex items-center gap-1.5 p-1 bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto max-w-[200px] md:max-w-md no-scrollbar">
+            <button
+              onClick={() => toggleProgram("ALL")}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedProgramIds.includes("ALL") ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:bg-gray-50"}`}
+            >
+              ALL
+            </button>
+            {programs.map(p => (
+              <button
+                key={p.id}
+                onClick={() => toggleProgram(p.id)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${selectedProgramIds.includes(p.id) ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 hover:bg-gray-50"}`}
+              >
+                {p.name.toUpperCase()}
+              </button>
+            ))}
+          </div>
           <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
             className="px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
           <button onClick={() => setSelectedMonth('')} className="px-3 py-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">All Months</button>
