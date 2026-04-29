@@ -471,7 +471,7 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
 
                 {/* Past history entries — newest first, editable */}
                 {edited.history && edited.history.length > 0 && (
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1 border border-gray-100 rounded-2xl p-3 bg-gray-50/50">
+                  <div className="space-y-2 pr-1 border border-gray-100 rounded-2xl p-3 bg-gray-50/50">
                     {[...edited.history].reverse().map((h, revIdx) => {
                       const origIdx = edited.history.length - 1 - revIdx;
                       return (
