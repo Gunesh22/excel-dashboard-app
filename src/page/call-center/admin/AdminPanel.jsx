@@ -75,11 +75,10 @@ export default function AdminPanel({ onExit, onAttendersChange }) {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                activeTab === item.id
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${activeTab === item.id
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
+                }`}
             >
               {item.icon}
               {item.label}
@@ -204,8 +203,8 @@ function DashboardTab({ programs, attenders }) {
         if (d) {
           const dayStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
           if (map[dayStr]) {
-             if (l.status === "Interested") map[dayStr].interested++;
-             if (l.status === "Reg.Done") map[dayStr].registered++;
+            if (l.status === "Interested") map[dayStr].interested++;
+            if (l.status === "Reg.Done") map[dayStr].registered++;
           }
         }
       }
@@ -229,7 +228,7 @@ function DashboardTab({ programs, attenders }) {
       if (history && Array.isArray(history)) {
         historyStr = history.map(h => `[${new Date(h.timestamp).toLocaleDateString("en-IN")}] ${h.attenderName}: ${h.status} - ${h.remark}`).join(" | ");
       }
-      
+
       const nameKey = Object.keys(rest).find(k => k.toLowerCase() === "name" || k.toLowerCase().includes("caller") || k.toLowerCase().includes("khoji")) || "Name";
       const nameVal = rest[nameKey] || "";
       delete rest[nameKey];
@@ -274,9 +273,9 @@ function DashboardTab({ programs, attenders }) {
           <span className="text-gray-400 text-sm font-medium">to</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
             className="px-3 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          
-          <button 
-            onClick={handleExportReport} 
+
+          <button
+            onClick={handleExportReport}
             disabled={!selectedProgramId || filteredLogs.length === 0}
             className="ml-2 flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition disabled:opacity-50"
           >
@@ -358,7 +357,7 @@ function DashboardTab({ programs, attenders }) {
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} padding={{ left: 10, right: 10 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Legend verticalAlign="top" height={36}/>
+                  <Legend verticalAlign="top" height={36} />
                   <Line type="monotone" dataKey="interested" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Interested" />
                   <Line type="monotone" dataKey="registered" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Registered" />
                 </LineChart>
@@ -485,12 +484,11 @@ function DashboardTab({ programs, attenders }) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {a.status && (
-                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${
-                          a.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
-                          a.status === "Interested" ? "bg-blue-100 text-blue-700" :
-                          a.status === "Info given" ? "bg-purple-100 text-purple-700" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>{a.status}</span>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${a.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
+                            a.status === "Interested" ? "bg-blue-100 text-blue-700" :
+                              a.status === "Info given" ? "bg-purple-100 text-purple-700" :
+                                "bg-gray-100 text-gray-600"
+                          }`}>{a.status}</span>
                       )}
                       <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">{timeAgo(a.time)}</span>
                     </div>
@@ -573,15 +571,15 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
     try {
       toast.loading(`Downloading ${program.name}...`, { id: "export" });
       const logs = await getProgramCallLogs(program.id);
-      
+
       if (!logs || logs.length === 0) {
         toast.dismiss("export");
         toast.error("No entries to export.");
         return;
       }
-      
+
       const INTERNAL_KEYS = ["id", "programId", "programName", "contactId", "attenderId", "createdAt", "updatedAt", "history", "_callbackDue", "_deleted", "isCallbackDue", "isHotLead", "callCount"];
-      
+
       const exportData = logs.map(log => {
         const cleanRow = {};
         Object.keys(log).forEach(key => {
@@ -589,12 +587,12 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
             cleanRow[key] = log[key];
           }
         });
-        
+
         // Format dates correctly from Firebase Timestamp to String
         if (cleanRow.callbackDate && cleanRow.callbackDate.toDate) {
           cleanRow.callbackDate = cleanRow.callbackDate.toDate().toLocaleString("en-IN");
         }
-        
+
         let historyStr = "";
         if (log.history && Array.isArray(log.history)) {
           historyStr = log.history.map(h => `[${new Date(h.timestamp).toLocaleDateString("en-IN")}] ${h.attenderName}: ${h.status} - ${h.remark}`).join(" | ");
@@ -610,12 +608,12 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
           "History Timeline": historyStr
         };
       });
-      
+
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Call_Logs");
       XLSX.writeFile(wb, `${program.name.replace(/[^a-zA-Z0-9]/g, '_')}_Master.xlsx`);
-      
+
       toast.dismiss("export");
       toast.success("Download complete!");
     } catch (err) {
@@ -645,86 +643,86 @@ function ProgramsTab({ programs, attenders, onRefresh }) {
       )}
 
       <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-black text-slate-800">Programs / Folders</h2>
-          <p className="text-slate-500 mt-1">Organize contacts by source or campaign.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-black text-slate-800">Programs / Folders</h2>
+            <p className="text-slate-500 mt-1">Organize contacts by source or campaign.</p>
+          </div>
         </div>
-      </div>
 
-      {/* Create new */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex gap-4">
-        <input
-          type="text"
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && handleCreate()}
-          placeholder="New program name (e.g. Facebook Ads March, Shivir April)"
-          className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <button onClick={handleCreate} disabled={isCreating || !newName.trim()}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-60 transition flex items-center gap-2">
-          <Plus size={16} /> Create Program
-        </button>
-      </div>
+        {/* Create new */}
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex gap-4">
+          <input
+            type="text"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleCreate()}
+            placeholder="New program name (e.g. Facebook Ads March, Shivir April)"
+            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button onClick={handleCreate} disabled={isCreating || !newName.trim()}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-60 transition flex items-center gap-2">
+            <Plus size={16} /> Create Program
+          </button>
+        </div>
 
-      {/* Programs List */}
-      <div className="space-y-4">
-        {programs.map(p => {
-          const s = stats[p.id] || {};
-          return (
-            <div key={p.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
-                    <FolderOpen size={22} className="text-indigo-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-gray-800 text-lg">{p.name}</h3>
-                    <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
-                      <span>{s.total || 0} total</span>
-                      <span className="text-green-600 font-semibold">{s.available || 0} available</span>
-                      <span className="text-blue-600 font-semibold">{s.assigned || 0} assigned</span>
-                      <span className="text-gray-500">{s.done || 0} done</span>
+        {/* Programs List */}
+        <div className="space-y-4">
+          {programs.map(p => {
+            const s = stats[p.id] || {};
+            return (
+              <div key={p.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                      <FolderOpen size={22} className="text-indigo-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-800 text-lg">{p.name}</h3>
+                      <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
+                        <span>{s.total || 0} total</span>
+                        <span className="text-green-600 font-semibold">{s.available || 0} available</span>
+                        <span className="text-blue-600 font-semibold">{s.assigned || 0} assigned</span>
+                        <span className="text-gray-500">{s.done || 0} done</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {/* Download Master Excel button */}
-                  <button 
-                    onClick={() => handleExportExcel(p)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                  >
-                    <Download size={15} /> Download
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {/* Download Master Excel button */}
+                    <button
+                      onClick={() => handleExportExcel(p)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                    >
+                      <Download size={15} /> Download
+                    </button>
 
-                  {/* Upload button */}
-                  <label className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition ${isUploading === p.id ? "bg-gray-100 text-gray-400" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"}`}>
-                    {isUploading === p.id ? <Loader size={15} className="animate-spin" /> : <Upload size={15} />}
-                    {isUploading === p.id ? "Uploading..." : "Upload Excel"}
-                    <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleFileUpload(e, p)} disabled={isUploading === p.id} />
-                  </label>
-                  <button onClick={() => handleDelete(p.id, p.name)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition">
-                    <Trash2 size={16} />
-                  </button>
+                    {/* Upload button */}
+                    <label className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold cursor-pointer transition ${isUploading === p.id ? "bg-gray-100 text-gray-400" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"}`}>
+                      {isUploading === p.id ? <Loader size={15} className="animate-spin" /> : <Upload size={15} />}
+                      {isUploading === p.id ? "Uploading..." : "Upload Excel"}
+                      <input type="file" accept=".xlsx,.xls" className="hidden" onChange={e => handleFileUpload(e, p)} disabled={isUploading === p.id} />
+                    </label>
+                    <button onClick={() => handleDelete(p.id, p.name)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
+                {s.total > 0 && (
+                  <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.round(((s.assigned || 0) + (s.done || 0)) / s.total * 100)}%` }} />
+                  </div>
+                )}
               </div>
-              {s.total > 0 && (
-                <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.round(((s.assigned || 0) + (s.done || 0)) / s.total * 100)}%` }} />
-                </div>
-              )}
+            );
+          })}
+          {programs.length === 0 && (
+            <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl text-gray-400">
+              No programs yet. Create one above.
             </div>
-          );
-        })}
-        {programs.length === 0 && (
-          <div className="h-40 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl text-gray-400">
-            No programs yet. Create one above.
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
@@ -1014,26 +1012,25 @@ function AttendersTab({ attenders, programs, onRefresh }) {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {filteredViewLogs.map((log, i) => {
-                       return (
+                      return (
                         <tr key={log.id} className="hover:bg-indigo-50/30 transition-colors">
                           <td className="px-4 py-3 text-gray-400 text-xs font-bold">{i + 1}</td>
                           <td className="px-4 py-3">
-                             <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${
-                               log.isHotLead ? "bg-orange-100 text-orange-700" :
-                               log.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
-                               log.status === "Interested" ? "bg-blue-100 text-blue-700" :
-                               log.status ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-400"
-                             }`}>
-                                {log.isHotLead && <Flame size={10} className="inline mr-1" fill="currentColor" />}
-                                {log.status || "Pending"}
-                             </span>
+                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${log.isHotLead ? "bg-orange-100 text-orange-700" :
+                                log.status === "Reg.Done" ? "bg-emerald-100 text-emerald-700" :
+                                  log.status === "Interested" ? "bg-blue-100 text-blue-700" :
+                                    log.status ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-400"
+                              }`}>
+                              {log.isHotLead && <Flame size={10} className="inline mr-1" fill="currentColor" />}
+                              {log.status || "Pending"}
+                            </span>
                           </td>
                           <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg ${log.callType === "incoming" ? "bg-green-50 text-green-600" : "bg-slate-50 text-slate-500"}`}>{log.callType || "outgoing"}</span></td>
                           <td className="px-4 py-3 text-xs font-bold text-indigo-600 whitespace-nowrap">{log.programName || <span className="text-gray-300">—</span>}</td>
                           {viewLogCols.map(c => { const v = log[c]; const display = (v && typeof v === "object") ? JSON.stringify(v) : (v || "\u2014"); return <td key={c} className="px-4 py-3 text-xs font-bold text-slate-700 whitespace-nowrap">{display}</td>; })}
                           <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate">{log.remark || "—"}</td>
                           <td className="px-4 py-3 text-xs font-bold text-amber-600">
-                             {log.callbackDate?.toDate ? log.callbackDate.toDate().toLocaleDateString() : log.callbackDate || "—"}
+                            {log.callbackDate?.toDate ? log.callbackDate.toDate().toLocaleDateString() : log.callbackDate || "—"}
                           </td>
                         </tr>
                       );
@@ -1044,7 +1041,7 @@ function AttendersTab({ attenders, programs, onRefresh }) {
               )}
             </div>
             <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live View · Changes appear in real-time</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Live View · Changes appear in real-time</p>
             </div>
           </div>
         </div>
@@ -1055,7 +1052,82 @@ function AttendersTab({ attenders, programs, onRefresh }) {
 
 // ─── Monthly Report Tab ──────────────────────
 const CONNECTED_STATUSES = ["Info given", "Interested", "Reg.Done", "reminder", "Query", "Already Reg.d", "Next time", "Shivir done", "Not possible"];
-const NOT_CONNECTED_STATUSES = ["NA", "Busy", "Call Cut", "switched off", "Invalid No", "Not interested", "Called by mistake"];
+const NOT_CONNECTED_STATUSES = ["NA", "Busy", "Call Cut", "switched off", "Invalid No", "Not interested", "Called by mistake", "no network", "wrong no.", "no answer"];
+
+
+const MonthlySection = ({ id, label, badge, isOpen, onToggle, children, color = "slate" }) => {
+  const themes = {
+    slate: { border: "border-l-slate-400", bg: "bg-slate-50 hover:bg-slate-100", text: "text-slate-800", badge: "bg-white text-slate-600 border-slate-200" },
+    blue: { border: "border-l-blue-500", bg: "bg-blue-50 hover:bg-blue-100", text: "text-blue-900", badge: "bg-white text-blue-700 border-blue-200" },
+    emerald: { border: "border-l-emerald-500", bg: "bg-emerald-50 hover:bg-emerald-100", text: "text-emerald-900", badge: "bg-white text-emerald-700 border-emerald-200" },
+    indigo: { border: "border-l-indigo-500", bg: "bg-indigo-50 hover:bg-indigo-100", text: "text-indigo-900", badge: "bg-white text-indigo-700 border-indigo-200" },
+    purple: { border: "border-l-purple-500", bg: "bg-purple-50 hover:bg-purple-100", text: "text-purple-900", badge: "bg-white text-purple-700 border-purple-200" },
+    orange: { border: "border-l-orange-500", bg: "bg-orange-50 hover:bg-orange-100", text: "text-orange-900", badge: "bg-white text-orange-700 border-orange-200" },
+    rose: { border: "border-l-rose-500", bg: "bg-rose-50 hover:bg-rose-100", text: "text-rose-900", badge: "bg-white text-rose-700 border-rose-200" }
+  };
+  const theme = themes[color] || themes.slate;
+
+  return (
+    <div className={`bg-white rounded-2xl border border-gray-100 border-l-4 shadow-sm overflow-hidden ${theme.border}`}>
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className={`w-full flex items-center justify-between px-5 py-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-300 ${theme.bg}`}
+      >
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-black ${theme.text}`}>{label}</span>
+          {badge !== undefined && (
+            <span className={`px-2 py-0.5 border rounded-lg text-xs font-black ${theme.badge}`}>{badge}</span>
+          )}
+        </div>
+        <div className={`flex items-center gap-1.5 opacity-60 text-xs font-bold ${theme.text}`}>
+          {isOpen ? 'Hide' : 'Show'}
+          <svg className={`w-3 h-3 transform transition-transform duration-300 ease-out ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+      </button>
+      <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden bg-white">
+          <div className="border-t border-gray-100 overflow-x-auto">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MonthlyTable = ({ heads, rows, footer }) => (
+  <table className="w-full text-xs min-w-max">
+    <thead>
+      <tr className="bg-gray-50 border-b border-gray-100">
+        {heads.map((h, i) => (
+          <th key={i} className={`px-4 py-2.5 text-[10px] font-black text-gray-500 uppercase tracking-widest whitespace-nowrap ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-50">
+      {rows.map((row, i) => (
+        <tr key={i} className={(i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30') + ' hover:bg-indigo-50/20 transition-colors'}>
+          {row.map((cell, j) => (
+            <td key={j} className={`px-4 py-2 ${j === 0 ? 'font-black text-slate-700 whitespace-nowrap' : 'text-center font-bold text-slate-600'}`}>{cell ?? '—'}</td>
+          ))}
+        </tr>
+      ))}
+      {rows.length === 0 && (
+        <tr><td colSpan={heads.length} className="py-10 text-center text-gray-300 font-bold">No data for this period.</td></tr>
+      )}
+    </tbody>
+    {footer && (
+      <tfoot>
+        <tr className="bg-slate-100 border-t-2 border-slate-200">
+          {footer.map((cell, i) => (
+            <td key={i} className={`px-4 py-2.5 font-black text-slate-800 ${i === 0 ? 'text-left' : 'text-center'}`}>{cell}</td>
+          ))}
+        </tr>
+      </tfoot>
+    )}
+  </table>
+);
 
 function MonthlyReportTab({ programs, attenders }) {
   const [selectedProgramId, setSelectedProgramId] = useState("ALL");
@@ -1075,36 +1147,46 @@ function MonthlyReportTab({ programs, attenders }) {
     return () => { if (unsubRef.current) unsubRef.current(); };
   }, [selectedProgramId]);
 
+  // FIX #2: Use history entry timestamps for month filtering (not updatedAt which changes on edits)
   const monthLogs = React.useMemo(() => {
     if (!selectedMonth) return callLogs;
     const [year, month] = selectedMonth.split("-").map(Number);
     return callLogs.filter(l => {
-      // L1 fix: Use updatedAt (when call was actually made) over createdAt (when contact was assigned)
+      if (l.history && l.history.length > 0) {
+        return l.history.some(h => {
+          if (!h.timestamp) return false;
+          const d = new Date(h.timestamp);
+          return !isNaN(d) && d.getFullYear() === year && d.getMonth() + 1 === month;
+        });
+      }
       const d = l.updatedAt?.toDate ? l.updatedAt.toDate() : l.createdAt?.toDate ? l.createdAt.toDate() : null;
       if (!d) return true;
       return d.getFullYear() === year && d.getMonth() + 1 === month;
     });
   }, [callLogs, selectedMonth]);
 
-  // ── Extract ALL call attempts from history arrays ──
+  // FIX #1 + #8: Extract attempts filtered to the selected month only
   const allAttempts = React.useMemo(() => {
+    const [year, month] = selectedMonth ? selectedMonth.split("-").map(Number) : [0, 0];
     const attempts = [];
     monthLogs.forEach(log => {
-      const getIso = d => d?.toDate ? d.toDate().toISOString() : d ? new Date(d).toISOString() : new Date().toISOString();
-      if (log.history && Array.isArray(log.history)) {
+      const getIso = d => d?.toDate ? d.toDate().toISOString() : d ? new Date(d).toISOString() : null;
+      if (log.history && Array.isArray(log.history) && log.history.length > 0) {
         log.history.forEach(h => {
+          if (selectedMonth && h.timestamp) {
+            const ts = new Date(h.timestamp);
+            if (!isNaN(ts) && (ts.getFullYear() !== year || ts.getMonth() + 1 !== month)) return;
+          }
           attempts.push({
-            status: h.status,
+            status: h.status || log.status,
             attenderName: h.attenderName || log.attenderName || "Unknown",
             callType: log.callType,
             programName: log.programName,
-            timestamp: h.timestamp || getIso(log.updatedAt || log.createdAt), // L2 fix: history entries use .timestamp not .date
-            log, // reference to parent log for field lookups
+            timestamp: h.timestamp || getIso(log.updatedAt || log.createdAt),
+            log,
           });
         });
-      }
-      // If no history but has a status, count as 1 attempt
-      if ((!log.history || log.history.length === 0) && log.status) {
+      } else if (log.status) {
         attempts.push({
           status: log.status,
           attenderName: log.attenderName || "Unknown",
@@ -1116,41 +1198,39 @@ function MonthlyReportTab({ programs, attenders }) {
       }
     });
     return attempts;
-  }, [monthLogs]);
+  }, [monthLogs, selectedMonth]);
 
   const totalAttempts = allAttempts.length;
   const totalContacts = monthLogs.length;
 
-  // ── Field finder ──
+  // FIX #6: useCallback for stable reference — prevents pivot useMemos re-computing every render
   const findFieldKey = React.useCallback((log, aliases) => {
-    return Object.keys(log).find(k => aliases.some(a => k.toLowerCase() === a.toLowerCase())) 
-      || Object.keys(log).find(k => aliases.some(a => k.toLowerCase().includes(a.toLowerCase()))) 
+    return Object.keys(log).find(k => aliases.some(a => k.toLowerCase() === a.toLowerCase()))
+      || Object.keys(log).find(k => aliases.some(a => k.toLowerCase().includes(a.toLowerCase())))
       || null;
   }, []);
 
-  // ── Section 1: Connected / Not Connected (both attempts + contacts) ──
   const section1 = React.useMemo(() => {
-    // By attempts (from history)
     const attConnected = allAttempts.filter(a => CONNECTED_STATUSES.includes(a.status));
     const attNotConnected = allAttempts.filter(a => NOT_CONNECTED_STATUSES.includes(a.status));
     const attConnIncoming = attConnected.filter(a => a.callType === "incoming" || a.callType === "incoming f").length;
     const attConnOutgoing = attConnected.length - attConnIncoming;
     const attNotIncoming = attNotConnected.filter(a => a.callType === "incoming" || a.callType === "incoming f").length;
     const attNotOutgoing = attNotConnected.length - attNotIncoming;
-
-    // By unique contacts (final status)
     const ucConnected = monthLogs.filter(l => CONNECTED_STATUSES.includes(l.status));
     const ucNotConnected = monthLogs.filter(l => NOT_CONNECTED_STATUSES.includes(l.status));
     const ucConnIncoming = ucConnected.filter(l => l.callType === "incoming" || l.callType === "incoming f").length;
     const ucConnOutgoing = ucConnected.length - ucConnIncoming;
     const ucNotIncoming = ucNotConnected.filter(l => l.callType === "incoming" || l.callType === "incoming f").length;
     const ucNotOutgoing = ucNotConnected.length - ucNotIncoming;
-
-    return { attConnected: attConnected.length, attNotConnected: attNotConnected.length, attConnIncoming, attConnOutgoing, attNotIncoming, attNotOutgoing,
-      ucConnected: ucConnected.length, ucNotConnected: ucNotConnected.length, ucConnIncoming, ucConnOutgoing, ucNotIncoming, ucNotOutgoing };
+    return {
+      attConnected: attConnected.length, attNotConnected: attNotConnected.length,
+      attConnIncoming, attConnOutgoing, attNotIncoming, attNotOutgoing,
+      ucConnected: ucConnected.length, ucNotConnected: ucNotConnected.length,
+      ucConnIncoming, ucConnOutgoing, ucNotIncoming, ucNotOutgoing
+    };
   }, [allAttempts, monthLogs]);
 
-  // Connected status breakdown (attempts)
   const connectedBreakdown = React.useMemo(() => {
     const map = {};
     CONNECTED_STATUSES.forEach(s => { map[s] = { att: 0, attIn: 0, attOut: 0, uc: 0, ucIn: 0, ucOut: 0 }; });
@@ -1183,7 +1263,6 @@ function MonthlyReportTab({ programs, attenders }) {
     return Object.entries(map).filter(([, v]) => v.att > 0 || v.uc > 0).map(([status, v]) => ({ status, ...v }));
   }, [allAttempts, monthLogs]);
 
-  // ── Section 2: Connected breakdowns — Khoji/New, Called For, Source ──
   const connectedContacts = React.useMemo(() => monthLogs.filter(l => CONNECTED_STATUSES.includes(l.status)), [monthLogs]);
 
   const khojiBreakdown = React.useMemo(() => {
@@ -1216,41 +1295,37 @@ function MonthlyReportTab({ programs, attenders }) {
     return Object.entries(map).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
   }, [connectedContacts, findFieldKey]);
 
-  // ── Section 3: Info Given / Abhivyakti ──
   const infoGivenCount = React.useMemo(() => monthLogs.filter(l => l.status === "Info given").length, [monthLogs]);
   const interestedCount = React.useMemo(() => monthLogs.filter(l => l.status === "Interested").length, [monthLogs]);
   const regDoneCount = React.useMemo(() => monthLogs.filter(l => l.status === "Reg.Done").length, [monthLogs]);
-  // Attempts for the same
   const infoGivenAttempts = React.useMemo(() => allAttempts.filter(a => a.status === "Info given").length, [allAttempts]);
   const interestedAttempts = React.useMemo(() => allAttempts.filter(a => a.status === "Interested").length, [allAttempts]);
   const regDoneAttempts = React.useMemo(() => allAttempts.filter(a => a.status === "Reg.Done").length, [allAttempts]);
 
-  // ── Detailed Breakdowns ──
-
-  // A) Attender-wise Detailed Breakdown
+  // FIX #3 + #5 + #7: Attender performance — single source from allAttempts only
+  // No more ghost rows or mixed denominators
   const attenderPerformance = React.useMemo(() => {
+    // FIX #7: Complete no-answer list including Invalid No and wrong no.
+    const NO_ANSWER_STATUSES = ["NA", "Busy", "Call Cut", "switched off", "no answer", "no network", "Invalid No", "wrong no."];
     const map = {};
-    monthLogs.forEach(l => {
-      const staff = l.attenderName || "Unknown";
-      if (!map[staff]) map[staff] = { staff, attempts: 0, contacts: 0, connected: 0, notConnected: 0, registrations: 0 };
-      map[staff].contacts++;
-      if (CONNECTED_STATUSES.includes(l.status)) map[staff].connected++;
-      else if (NOT_CONNECTED_STATUSES.includes(l.status)) map[staff].notConnected++;
-      if (l.status === "Reg.Done") map[staff].registrations++;
-    });
     allAttempts.forEach(a => {
       const staff = a.attenderName || "Unknown";
-      if (!map[staff]) map[staff] = { staff, attempts: 0, contacts: 0, connected: 0, notConnected: 0, registrations: 0 };
+      if (!map[staff]) map[staff] = { staff, attempts: 0, connected: 0, notConnected: 0, noAnswer: 0, infoGiven: 0, registrations: 0 };
       map[staff].attempts++;
+      if (CONNECTED_STATUSES.includes(a.status)) map[staff].connected++;
+      else if (NOT_CONNECTED_STATUSES.includes(a.status)) map[staff].notConnected++;
+      if (NO_ANSWER_STATUSES.includes(a.status)) map[staff].noAnswer++;
+      if (a.status === "Info given") map[staff].infoGiven++;
+      if (a.status === "Reg.Done") map[staff].registrations++;
     });
     return Object.values(map)
-      .sort((a, b) => b.contacts - a.contacts)
+      .sort((a, b) => b.attempts - a.attempts)
       .map(m => ({
         ...m,
-        connRate: m.contacts > 0 ? Math.round((m.connected / m.contacts) * 100) + '%' : '0%',
-        regRate: m.contacts > 0 ? Math.round((m.registrations / m.contacts) * 100) + '%' : '0%',
+        connRate: m.attempts > 0 ? Math.round((m.connected / m.attempts) * 100) + '%' : '0%',
+        regRate: m.attempts > 0 ? Math.round((m.registrations / m.attempts) * 100) + '%' : '0%',
       }));
-  }, [allAttempts, monthLogs]);
+  }, [allAttempts]);
 
   // B) Day-wise Trend
   const dayWiseTrend = React.useMemo(() => {
@@ -1303,7 +1378,7 @@ function MonthlyReportTab({ programs, attenders }) {
       const dateObj = new Date(a.timestamp);
       if (isNaN(dateObj)) return;
       const hour = dateObj.getHours(); // 0-23
-      const hourLabel = `${hour.toString().padStart(2, '0')}:00 - ${(hour+1).toString().padStart(2, '0')}:00`;
+      const hourLabel = `${hour.toString().padStart(2, '0')}:00 - ${(hour + 1).toString().padStart(2, '0')}:00`;
       if (!map[hourLabel]) map[hourLabel] = { hour, label: hourLabel, attempts: 0, connected: 0 };
       map[hourLabel].attempts++;
       if (CONNECTED_STATUSES.includes(a.status)) map[hourLabel].connected++;
@@ -1340,7 +1415,7 @@ function MonthlyReportTab({ programs, attenders }) {
     const resolvedCallbacks = monthLogs.filter(l => l.callbackDate && l.status && l.status !== "reminder").length;
     const hotLeads = monthLogs.filter(l => l.isHotLead).length;
     const hotLeadConversions = monthLogs.filter(l => l.isHotLead && l.status === "Reg.Done").length;
-    
+
     return {
       callbackRate: scheduledCallbacks > 0 ? Math.round((resolvedCallbacks / scheduledCallbacks) * 100) : 0,
       hotLeadConversionRate: hotLeads > 0 ? Math.round((hotLeadConversions / hotLeads) * 100) : 0,
@@ -1359,29 +1434,65 @@ function MonthlyReportTab({ programs, attenders }) {
       const log = a.log || {};
       const khojiKey = findFieldKey(log, ["khoji/new", "khoji", "new/khoji"]);
       const khojiVal = (khojiKey ? String(log[khojiKey] || "").trim() : "") || "Unknown";
-      
+
       const key = `${pName}|${attName}|${cType}|${khojiVal}`;
       if (!map[key]) {
-        map[key] = { 
-          program: pName, 
-          attender: attName, 
-          callType: cType, 
-          khoji: khojiVal, 
-          attempts: 0, 
-          connected: 0, 
-          registrations: 0 
+        map[key] = {
+          program: pName,
+          attender: attName,
+          callType: cType,
+          khoji: khojiVal,
+          attempts: 0,
+          connected: 0,
+          registrations: 0
         };
       }
       map[key].attempts++;
       if (CONNECTED_STATUSES.includes(a.status)) map[key].connected++;
       if (a.status === "Reg.Done") map[key].registrations++;
     });
-    return Object.values(map).sort((a, b) => 
-      a.program.localeCompare(b.program) || 
+    return Object.values(map).sort((a, b) =>
+      a.program.localeCompare(b.program) ||
       a.attender.localeCompare(b.attender) ||
       a.khoji.localeCompare(b.khoji)
     );
   }, [allAttempts, findFieldKey]);
+
+  // ── Source / Khoji Program Pivots (uses findFieldKey already defined above) ──
+  const monthlyPrograms = React.useMemo(() => [...new Set(monthLogs.map(l => l.programName || 'Unknown'))].sort(), [monthLogs]);
+  const monthlySourcePivot = React.useMemo(() => {
+    const m = {};
+    monthLogs.forEach(l => {
+      const k = findFieldKey(l, ['source', 'sourse']);
+      const src = k ? String(l[k] || '').trim() || 'Unknown' : 'Unknown';
+      const p = l.programName || 'Unknown';
+      if (!m[src]) m[src] = { _total: 0 };
+      m[src][p] = (m[src][p] || 0) + 1;
+      m[src]._total++;
+    }); return m;
+  }, [monthLogs, findFieldKey]);
+  const monthlyIncomingSourcePivot = React.useMemo(() => {
+    const m = {};
+    monthLogs.filter(l => l.callType === 'incoming' || l.callType === 'incoming f').forEach(l => {
+      const k = findFieldKey(l, ['source', 'sourse']);
+      const src = k ? String(l[k] || '').trim() || 'Unknown' : 'Unknown';
+      const p = l.programName || 'Unknown';
+      if (!m[src]) m[src] = { _total: 0 };
+      m[src][p] = (m[src][p] || 0) + 1;
+      m[src]._total++;
+    }); return m;
+  }, [monthLogs, findFieldKey]);
+  const monthlyKhojiPivot = React.useMemo(() => {
+    const m = {};
+    monthLogs.forEach(l => {
+      const k = findFieldKey(l, ['khoji/new', 'khoji', 'new/khoji']);
+      const val = k ? String(l[k] || '').trim() || 'Unknown' : 'Unknown';
+      const p = l.programName || 'Unknown';
+      if (!m[val]) m[val] = { _total: 0 };
+      m[val][p] = (m[val][p] || 0) + 1;
+      m[val]._total++;
+    }); return m;
+  }, [monthLogs, findFieldKey]);
 
   // ── Export ──
   const handleExport = () => {
@@ -1436,7 +1547,7 @@ function MonthlyReportTab({ programs, attenders }) {
       ...timeOfDayTrend.map(r => [r.time, r.attempts, r.connected, r.rate]),
       [],
       ["Day Of Week Analysis", "Attempts", "Connected", "Registrations", "Conn %"],
-      ...dayOfWeekTrend.map(r => [r.day, r.attempts, r.connected, r.registrations, r.attempts > 0 ? Math.round((r.connected/r.attempts)*100)+'%' : '0%']),
+      ...dayOfWeekTrend.map(r => [r.day, r.attempts, r.connected, r.registrations, r.attempts > 0 ? Math.round((r.connected / r.attempts) * 100) + '%' : '0%']),
       [],
       ["Efficiency Metrics", "Metric", "Value"],
       ["Callback Resolution Rate", efficiencyMetrics.callbackRate + "%"],
@@ -1474,308 +1585,241 @@ function MonthlyReportTab({ programs, attenders }) {
     </div>
   );
 
-  const SectionCard = ({ title, children }) => (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-        <h3 className="font-black text-gray-800 text-sm uppercase tracking-wider">{title}</h3>
-      </div>
-      <div className="p-6">{children}</div>
-    </div>
-  );
+  // ── Collapsible Section helper ──
+  const [openSections, setOpenSections] = React.useState({ s1: true, s2: true, sAbhivyakti: true, s3: true, s4: true, s5: false, s6: false });
+  const toggle = (k) => setOpenSections(p => ({ ...p, [k]: !p[k] }));
+
+  // Attender totals footer
+  const attTotals = attenderPerformance.length > 1
+    ? attenderPerformance.reduce((acc, r) => ({
+        attempts: acc.attempts + r.attempts,
+        connected: acc.connected + r.connected,
+        notConnected: acc.notConnected + r.notConnected,
+        noAnswer: acc.noAnswer + r.noAnswer,
+        infoGiven: acc.infoGiven + r.infoGiven,
+        registrations: acc.registrations + r.registrations,
+      }), { attempts: 0, connected: 0, notConnected: 0, noAnswer: 0, infoGiven: 0, registrations: 0 })
+    : null;
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="p-6 space-y-3">
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Monthly Report</h2>
-          <p className="text-slate-500 mt-1">Call Attempts = every call made · Unique Contacts = each person's final status</p>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Monthly Report</h2>
+          <p className="text-slate-400 text-xs mt-0.5">Attempts = every call made &nbsp;·&nbsp; Contacts = each person's final status</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <select value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-200 rounded-2xl font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
             <option value="ALL">All Programs</option>
             {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
-            className="px-4 py-2.5 bg-white border border-gray-200 rounded-2xl font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          <button onClick={() => setSelectedMonth("")} className="px-3 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-800 bg-white border border-gray-200 rounded-2xl transition">All Months</button>
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          <button onClick={() => setSelectedMonth('')} className="px-3 py-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">All Months</button>
           <button onClick={handleExport}
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-700 transition shadow-lg shadow-emerald-600/20 active:scale-95">
-            <Download size={16} /> Export Excel
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-xl font-black text-xs hover:bg-emerald-700 transition shadow-md shadow-emerald-600/20 active:scale-95">
+            <Download size={14} /> Export Excel
           </button>
         </div>
       </div>
 
-      {/* Top Summary Cards */}
-      <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm mb-4">
-        <h3 className="font-black text-gray-800 text-sm uppercase tracking-wider mb-6">Aggregate Funnel</h3>
-        <div className="relative">
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-gray-50 to-transparent rounded-b-2xl pointer-events-none" />
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between relative z-10 w-full">
-            <div className="text-center w-full">
-              <div className="mx-auto w-32 h-32 bg-slate-800 text-white rounded-full flex flex-col items-center justify-center border-4 border-white shadow-xl">
-                <p className="text-2xl font-black">{totalAttempts}</p>
-                <p className="text-[9px] uppercase tracking-widest opacity-70">Attempts</p>
-              </div>
-            </div>
-            
-            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-gray-300 to-transparent" />
-            
-            <div className="text-center w-full">
-              <div className="mx-auto w-32 h-32 bg-indigo-600 text-white rounded-full flex flex-col items-center justify-center border-4 border-white shadow-xl relative z-20">
-                <p className="text-2xl font-black">{totalContacts}</p>
-                <p className="text-[9px] uppercase tracking-widest opacity-70">Contacts</p>
-              </div>
-            </div>
-
-            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-indigo-200 to-transparent" />
-
-            <div className="text-center w-full">
-              <div className="mx-auto w-32 h-32 bg-emerald-600 text-white rounded-full flex flex-col items-center justify-center border-4 border-white shadow-xl relative z-30">
-                <p className="text-2xl font-black">{section1.ucConnected}</p>
-                <p className="text-[9px] uppercase tracking-widest opacity-70">Connected</p>
-              </div>
-            </div>
-
-            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-emerald-200 to-transparent" />
-
-            <div className="text-center w-full">
-              <div className="mx-auto w-32 h-32 bg-purple-600 text-white rounded-full flex flex-col items-center justify-center border-4 border-white shadow-xl relative z-40 transform scale-110">
-                <p className="text-3xl font-black">{regDoneCount}</p>
-                <p className="text-[10px] uppercase tracking-widest opacity-70">Registered</p>
-              </div>
-            </div>
+      {/* ── KPI Strip ── */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+        {[
+          { label: 'Total Attempts', value: totalAttempts, color: 'bg-slate-800 text-white' },
+          { label: 'Unique Contacts', value: totalContacts, color: 'bg-indigo-600 text-white' },
+          { label: 'Connected', value: section1.ucConnected, color: 'bg-emerald-600 text-white' },
+          { label: 'Not Connected', value: section1.ucNotConnected, color: 'bg-red-500 text-white' },
+          { label: 'Info Given', value: infoGivenCount, color: 'bg-blue-500 text-white' },
+          { label: 'Registrations', value: regDoneCount, color: 'bg-purple-600 text-white' },
+        ].map(k => (
+          <div key={k.label} className={`${k.color} rounded-xl p-3 text-center shadow-sm`}>
+            <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{k.label}</p>
+            <p className="text-2xl font-black mt-0.5">{k.value}</p>
           </div>
-          
-          <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest px-16 mt-6">
-            <span className="text-center flex-1">Reach out</span>
-            <span className="text-center flex-1">{totalContacts > 0 ? Math.round((section1.ucConnected / totalContacts)*100) : 0}% Conn</span>
-            <span className="text-center flex-1">{section1.ucConnected > 0 ? Math.round((regDoneCount / section1.ucConnected)*100) : 0}% Reg</span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Legacy Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-2xl p-5 text-white shadow-lg">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Total Call Attempts</p>
-          <p className="text-3xl font-black mt-1">{totalAttempts}</p>
-        </div>
-        <div className="bg-indigo-600 rounded-2xl p-5 text-white shadow-lg">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Unique Contacts</p>
-          <p className="text-3xl font-black mt-1">{totalContacts}</p>
-        </div>
-        <div className="bg-emerald-600 rounded-2xl p-5 text-white shadow-lg">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Connected (Contacts)</p>
-          <p className="text-3xl font-black mt-1">{section1.ucConnected}</p>
-        </div>
-        <div className="bg-red-500 rounded-2xl p-5 text-white shadow-lg">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Not Connected (Contacts)</p>
-          <p className="text-3xl font-black mt-1">{section1.ucNotConnected}</p>
-        </div>
-      </div>
-
-      {/* Section: Advanced Efficiency Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Efficiency & Conversions</h3>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-black text-gray-800">Hot Lead Conversion</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Converted / Total Identified</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-black text-orange-600">{efficiencyMetrics.hotLeadConversionRate}%</p>
-                <p className="text-[9px] text-gray-400 font-bold">{efficiencyMetrics.totalHotLeads} Leads</p>
-              </div>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-               <div className="h-full bg-orange-500 rounded-full" style={{ width: `${efficiencyMetrics.hotLeadConversionRate}%` }} />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-black text-gray-800">Callback Resolution</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Followed Up / Scheduled</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-black text-indigo-600">{efficiencyMetrics.callbackRate}%</p>
-                <p className="text-[9px] text-gray-400 font-bold">{efficiencyMetrics.totalCallbacks} Callbacks</p>
-              </div>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-               <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${efficiencyMetrics.callbackRate}%` }} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-           <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Productivity by Weekday</h3>
-           <ResponsiveContainer width="100%" height={180}>
-             <BarChart data={dayOfWeekTrend}>
-               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-               <XAxis dataKey="day" tick={{ fontSize: 10, fontWeight: "bold" }} tickFormatter={s => s.substring(0, 3)} />
-               <YAxis tick={{ fontSize: 10 }} />
-               <Tooltip 
-                 contentStyle={{ borderRadius: "1rem", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                 cursor={{ fill: "#f8fafc" }}
-               />
-               <Bar dataKey="attempts" name="Attempts" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
-               <Bar dataKey="connected" name="Connected" fill="#6366f1" radius={[4, 4, 0, 0]} />
-               <Bar dataKey="registrations" name="Reg.Done" fill="#10b981" radius={[4, 4, 0, 0]} />
-             </BarChart>
-           </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Section 1: Total Calls Summary */}
-      <SectionCard title="Section 1: Total Calls — Attempts vs Unique Contacts">
-        <MiniTable
-          headers={["", "Attempts (In)", "Attempts (Out)", "Attempts Total", "Contacts (In)", "Contacts (Out)", "Contacts Total"]}
+      {/* ── Section 1: Calls Summary ── */}
+      <MonthlySection color="blue" id="s1" onToggle={toggle} isOpen={openSections["s1"]} label="Section 1 — Calls Summary" badge={totalAttempts + ' attempts'}>
+        <MonthlyTable
+          heads={['Category', 'Att In', 'Att Out', 'Att Total', 'UC In', 'UC Out', 'UC Total']}
           rows={[
-            ["Connected", section1.attConnIncoming, section1.attConnOutgoing, section1.attConnected, section1.ucConnIncoming, section1.ucConnOutgoing, section1.ucConnected],
-            ["Not Connected", section1.attNotIncoming, section1.attNotOutgoing, section1.attNotConnected, section1.ucNotIncoming, section1.ucNotOutgoing, section1.ucNotConnected],
+            ['Connected', section1.attConnIncoming, section1.attConnOutgoing, section1.attConnected, section1.ucConnIncoming, section1.ucConnOutgoing, section1.ucConnected],
+            ['Not Connected', section1.attNotIncoming, section1.attNotOutgoing, section1.attNotConnected, section1.ucNotIncoming, section1.ucNotOutgoing, section1.ucNotConnected],
           ]}
-          highlight
+          footer={[
+            'Grand Total',
+            totalAttempts,
+            '',
+            totalAttempts,
+            monthLogs.filter(l => l.callType === 'incoming' || l.callType === 'incoming f').length,
+            monthLogs.filter(l => l.callType !== 'incoming' && l.callType !== 'incoming f').length,
+            totalContacts,
+          ]}
         />
-      </SectionCard>
+        <div className="grid md:grid-cols-2 gap-0 border-t border-gray-100">
+          <div className="border-r border-gray-100">
+            <div className="px-4 py-2.5 bg-emerald-50/50 border-b border-gray-100">
+              <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Connected — Status Breakdown</span>
+            </div>
+            <MonthlyTable heads={['Status', 'Attempts', 'Contacts']}
+              rows={connectedBreakdown.map(r => [r.status, r.att, r.uc])} />
+          </div>
+          <div>
+            <div className="px-4 py-2.5 bg-red-50/50 border-b border-gray-100">
+              <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Not Connected — Status Breakdown</span>
+            </div>
+            <MonthlyTable heads={['Status', 'Attempts', 'Contacts']}
+              rows={notConnectedBreakdown.map(r => [r.status, r.att, r.uc])} />
+          </div>
+        </div>
+      </MonthlySection>
 
-      {/* Connected / Not Connected Breakdown */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <SectionCard title="Connected — Status Breakdown">
-          <MiniTable
-            headers={["Status", "Attempts", "Contacts"]}
-            rows={connectedBreakdown.map(r => [r.status, r.att, r.uc])}
-            highlight
-          />
-        </SectionCard>
-        <SectionCard title="Not Connected — Status Breakdown">
-          <MiniTable
-            headers={["Status", "Attempts", "Contacts"]}
-            rows={notConnectedBreakdown.map(r => [r.status, r.att, r.uc])}
-          />
-        </SectionCard>
-      </div>
-
-      {/* Section 2: Connected Breakdowns */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <SectionCard title="Khoji / New Wise (Connected)">
-          <MiniTable headers={["Khoji / New", "Contacts"]} rows={khojiBreakdown.map(r => [r.name, r.count])} />
-        </SectionCard>
-        <SectionCard title="Called For Wise (Connected)">
-          <MiniTable headers={["Called For", "Contacts"]} rows={calledForBreakdown.map(r => [r.name, r.count])} />
-        </SectionCard>
-        <SectionCard title="Source Wise (Connected)">
-          <MiniTable headers={["Source", "Contacts"]} rows={sourceBreakdown.map(r => [r.name, r.count])} />
-        </SectionCard>
-      </div>
-
-      {/* Section 3: Info Given / Abhivyakti */}
-      <SectionCard title="Section 3: Info Given / Abhivyakti Summary">
-        <div className="grid grid-cols-3 gap-4">
+      {/* ── Section 2: Connected Breakdowns ── */}
+      <MonthlySection color="emerald" id="s2" onToggle={toggle} isOpen={openSections["s2"]} label="Section 2 — Connected Calls Breakdown" badge={section1.ucConnected + ' connected contacts'}>
+        <div className="grid md:grid-cols-3 gap-0 divide-x divide-gray-100">
           {[
-            { label: "Info Given", attempts: infoGivenAttempts, contacts: infoGivenCount, color: "bg-blue-50 text-blue-700 border-blue-200" },
-            { label: "Interested", attempts: interestedAttempts, contacts: interestedCount, color: "bg-purple-50 text-purple-700 border-purple-200" },
-            { label: "Reg.Done (Abhivyakti)", attempts: regDoneAttempts, contacts: regDoneCount, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-          ].map(s => (
-            <div key={s.label} className={`${s.color} border rounded-2xl p-5 text-center`}>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{s.label}</p>
-              <p className="text-4xl font-black mt-2">{s.contacts}</p>
-              <p className="text-xs font-bold opacity-50 mt-1">{s.attempts} attempt{s.attempts !== 1 ? "s" : ""}</p>
+            { label: 'Khoji / New', rows: khojiBreakdown.map(r => [r.name, r.count]) },
+            { label: 'Called For', rows: calledForBreakdown.map(r => [r.name, r.count]) },
+            { label: 'Source', rows: sourceBreakdown.map(r => [r.name, r.count]) },
+          ].map(({ label, rows }) => (
+            <div key={label}>
+              <div className="px-4 py-2.5 bg-indigo-50/50 border-b border-gray-100">
+                <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">{label}</span>
+              </div>
+              <MonthlyTable heads={[label, 'Contacts']} rows={rows} />
             </div>
           ))}
         </div>
-      </SectionCard>
+      </MonthlySection>
 
-      {/* Section 4: Detailed Breakdowns */}
-      <h3 className="text-2xl font-black text-slate-800 tracking-tight mt-12 mb-4">Deep Breakdowns</h3>
-      
-      <div className="grid md:grid-cols-2 gap-6">
-        <SectionCard title="Attender Performance">
-          <MiniTable 
-            headers={["Staff", "Att", "Contacts", "Conn", "Conn %", "Reg", "Reg %"]} 
-            rows={attenderPerformance.map(r => [
-              r.staff, r.attempts, r.contacts, r.connected, 
-              <span className="text-indigo-600">{r.connRate}</span>, 
-              r.registrations, 
-              <span className="text-emerald-600">{r.regRate}</span>
-            ])} 
-            highlight 
-          />
-        </SectionCard>
-
-        <SectionCard title="Program Wise Details">
-          <MiniTable 
-            headers={["Program", "Att", "Contacts", "Conn", "Conn %", "Reg", "Reg %"]} 
-            rows={programWiseDetails.map(r => [
-              r.program, r.attempts, r.contacts, r.connected, 
-              <span className="text-indigo-600">{r.connRate}</span>, 
-              r.registrations, 
-              <span className="text-emerald-600">{r.regRate}</span>
-            ])} 
-            highlight 
-          />
-        </SectionCard>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <SectionCard title="Day-Wise Timeline">
-          <MiniTable 
-            headers={["Date", "Attempts", "Connected", "Registrations"]} 
-            rows={dayWiseTrend.map(r => [r.day, r.attempts, r.connected, r.registrations])} 
-          />
-        </SectionCard>
-
-        <SectionCard title="Time Of Day Analysis (Starts At)">
-          <MiniTable 
-            headers={["Hour", "Attempts", "Connected", "Conn %"]} 
-            rows={timeOfDayTrend.map(r => [
-              r.time, r.attempts, r.connected,
-              <span className="text-indigo-600">{r.rate}</span>
-            ])} 
-          />
-        </SectionCard>
-      </div>
-
-      {/* New Granular Combined Section */}
-      <SectionCard title="Section 5: Combined Granular Report (Shivir > Attender > Call Type > Khoji)">
-        <div className="overflow-x-auto rounded-2xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Shivir (Program)</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Attender</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Call Type</th>
-                <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Khoji / New</th>
-                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest bg-slate-50">Attempts</th>
-                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest bg-indigo-50">Connected</th>
-                <th className="px-4 py-3 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest bg-emerald-50">Reg.Done</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {combinedGranular.map((r, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-black text-gray-800">{r.program}</td>
-                  <td className="px-4 py-3 font-bold text-slate-600">{r.attender}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${r.callType === 'incoming' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {r.callType}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs font-bold text-gray-500">{r.khoji}</td>
-                  <td className="px-4 py-3 text-center font-black text-slate-700 bg-slate-50/50">{r.attempts}</td>
-                  <td className="px-4 py-3 text-center font-black text-indigo-600 bg-indigo-50/50">{r.connected}</td>
-                  <td className="px-4 py-3 text-center font-black text-emerald-600 bg-emerald-50/50">{r.registrations}</td>
-                </tr>
-              ))}
-              {combinedGranular.length === 0 && (
-                <tr><td colSpan={7} className="py-20 text-center text-gray-400 font-bold">No granular data available for this selection.</td></tr>
-              )}
-            </tbody>
-          </table>
+      {/* ── Section 3: Attender Performance ── */}
+      <MonthlySection color="rose" id="sAbhivyakti" label="Section — Abhivyakti Info &amp; Reg Stats" badge="Info Given &amp; Registrations" onToggle={toggle} isOpen={openSections["sAbhivyakti"]}>
+        <div className="grid grid-cols-3 gap-0 divide-x divide-gray-100">
+          {[
+            { label: "Info Given", attempts: monthLogs.filter(l => l.status === "Info given").length, contacts: Array.from(new Set(monthLogs.filter(l => l.status === "Info given").map(l => l.phone))).length, color: "bg-blue-50 text-blue-700 border-blue-100" },
+            { label: "Interested", attempts: monthLogs.filter(l => l.status === "Interested").length, contacts: Array.from(new Set(monthLogs.filter(l => l.status === "Interested").map(l => l.phone))).length, color: "bg-purple-50 text-purple-700 border-purple-100" },
+            { label: "Reg.Done (Abhivyakti)", attempts: monthLogs.filter(l => l.status === "Reg.Done").length, contacts: Array.from(new Set(monthLogs.filter(l => l.status === "Reg.Done").map(l => l.phone))).length, color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+          ].map(s => (
+            <div key={s.label} className={`${s.color} p-6 text-center border-b border-gray-100`}>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{s.label}</p>
+              <p className="text-3xl font-black mt-2">{s.contacts}</p>
+              <p className="text-xs font-bold opacity-60 mt-1">{s.attempts} attempt{s.attempts !== 1 ? "s" : ""}</p>
+            </div>
+          ))}
         </div>
-      </SectionCard>
+      </MonthlySection>
+
+      <MonthlySection color="indigo" id="s3" onToggle={toggle} isOpen={openSections["s3"]} label="Section 3 — Attender Performance" badge={attenderPerformance.length + ' attenders'}>
+        <MonthlyTable
+          heads={['Attender', 'Total Calls', 'Connected', 'Conn %', 'No Answer', 'Info Given', 'Reg.Done', 'Reg %']}
+          rows={attenderPerformance.map(r => [
+            r.staff, r.attempts, r.connected, r.connRate, r.noAnswer, r.infoGiven, r.registrations, r.regRate
+          ])}
+          footer={attTotals ? [
+            'Grand Total',
+            attTotals.attempts,
+            attTotals.connected,
+            attTotals.attempts > 0 ? Math.round((attTotals.connected / attTotals.attempts) * 100) + '%' : '0%',
+            attTotals.noAnswer,
+            attTotals.infoGiven,
+            attTotals.registrations,
+            attTotals.attempts > 0 ? Math.round((attTotals.registrations / attTotals.attempts) * 100) + '%' : '0%',
+          ] : undefined}
+        />
+      </MonthlySection>
+
+      {/* ── Section 4: Program-Wise ── */}
+      <MonthlySection color="purple" id="s4" onToggle={toggle} isOpen={openSections["s4"]} label="Section 4 — Program Wise Details" badge={programWiseDetails.length + ' programs'}>
+        <MonthlyTable
+          heads={['Program', 'Attempts', 'Contacts', 'Connected', 'Conn %', 'Reg.Done', 'Reg %']}
+          rows={programWiseDetails.map(r => [r.program, r.attempts, r.contacts, r.connected, r.connRate, r.registrations, r.regRate])}
+        />
+      </MonthlySection>
+
+      {/* ── Section 5: Source & Khoji Pivot Tables ── */}
+      <MonthlySection color="orange" id="s5" onToggle={toggle} isOpen={openSections["s5"]} label="Section 5 — Abhivyakti Report Analysis" badge="3 pivot tables">
+        {[
+          { label: 'All Calls — Source × Program', rowMap: monthlySourcePivot },
+          { label: 'Incoming Calls Only — Source × Program', rowMap: monthlyIncomingSourcePivot },
+          { label: 'Khoji / New × Program', rowMap: monthlyKhojiPivot },
+        ].map(({ label, rowMap }) => {
+          const rows = Object.keys(rowMap).filter(r => r !== '_total').sort();
+          const colTotals = {};
+          monthlyPrograms.forEach(p => { colTotals[p] = 0; });
+          rows.forEach(r => monthlyPrograms.forEach(p => { colTotals[p] += (rowMap[r][p] || 0); }));
+          const grandTotal = rows.reduce((s, r) => s + (rowMap[r]._total || 0), 0);
+          return (
+            <div key={label} className="border-b border-gray-100 last:border-0">
+              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{label}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-max">
+                  <thead>
+                    <tr className="bg-gray-50/50 border-b border-gray-100">
+                      <th className="px-4 py-2.5 text-left text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">↓ Source / Program →</th>
+                      {monthlyPrograms.map(p => (
+                        <th key={p} className="px-3 py-2.5 text-center text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">{p}</th>
+                      ))}
+                      <th className="px-3 py-2.5 text-center text-[10px] font-black text-slate-800 uppercase bg-slate-100">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {rows.map((row, i) => (
+                      <tr key={i} className={(i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30') + ' hover:bg-indigo-50/20 transition-colors'}>
+                        <td className="px-4 py-2 font-black text-slate-700 whitespace-nowrap">{row}</td>
+                        {monthlyPrograms.map(p => (
+                          <td key={p} className="px-3 py-2 text-center">
+                            {rowMap[row][p]
+                              ? <span className="px-2 py-0.5 rounded-lg font-black text-xs text-indigo-700 bg-indigo-50">{rowMap[row][p]}</span>
+                              : <span className="text-gray-200">—</span>}
+                          </td>
+                        ))}
+                        <td className="px-3 py-2 text-center font-black text-slate-700 bg-gray-50">{rowMap[row]._total || 0}</td>
+                      </tr>
+                    ))}
+                    {rows.length === 0 && (
+                      <tr><td colSpan={monthlyPrograms.length + 2} className="py-8 text-center text-gray-300 font-bold">No data for this period.</td></tr>
+                    )}
+                    <tr className="bg-slate-100 border-t-2 border-slate-200">
+                      <td className="px-4 py-2 font-black text-slate-800 text-[10px] uppercase tracking-wide">Grand Total</td>
+                      {monthlyPrograms.map(p => (
+                        <td key={p} className="px-3 py-2 text-center font-black text-slate-700">{colTotals[p] || '—'}</td>
+                      ))}
+                      <td className="px-3 py-2 text-center font-black text-slate-900 bg-slate-200">{grandTotal}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
+      </MonthlySection>
+
+      {/* ── Section 6: Combined Granular + Time Analysis ── */}
+      <MonthlySection color="slate" id="s6" onToggle={toggle} isOpen={openSections["s6"]} label="Section 6 — Deep Dive (Day · Time · Granular)" badge="collapsed by default">
+        <div className="grid md:grid-cols-2 gap-0 divide-x divide-gray-100 border-b border-gray-100">
+          <div>
+            <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+              <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Day-Wise Timeline</span>
+            </div>
+            <MonthlyTable heads={['Date', 'Attempts', 'Connected', 'Registrations']}
+              rows={dayWiseTrend.map(r => [r.day, r.attempts, r.connected, r.registrations])} />
+          </div>
+          <div>
+            <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+              <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Time of Day (Starts At)</span>
+            </div>
+            <MonthlyTable heads={['Hour', 'Attempts', 'Connected', 'Conn %']}
+              rows={timeOfDayTrend.map(r => [r.time, r.attempts, r.connected, r.rate])} />
+          </div>
+        </div>
+      </MonthlySection>
+
     </div>
   );
 }
@@ -1850,6 +1894,75 @@ function AbhivyaktiTab({ programs }) {
     return Array.from(keys);
   }, [monthFiltered]);
 
+  // ── Abhivyakti Analytics ──
+  const abvFindVal = (obj, aliases) => {
+    const key = Object.keys(obj).find(k => aliases.some(a => k.toLowerCase().includes(a)));
+    return key ? String(obj[key] || '').trim() || 'Unknown' : 'Unknown';
+  };
+  const abvPrograms = React.useMemo(() => [...new Set(monthFiltered.map(r => r.programName || 'Unknown'))].sort(), [monthFiltered]);
+  const sourcePivot = React.useMemo(() => {
+    const m = {};
+    monthFiltered.forEach(r => {
+      const s = abvFindVal(r, ['source','sourse']); const p = r.programName || 'Unknown';
+      if (!m[s]) m[s] = {}; m[s][p] = (m[s][p] || 0) + 1;
+    }); return m;
+  }, [monthFiltered]);
+  const khojiPivot = React.useMemo(() => {
+    const m = {};
+    monthFiltered.forEach(r => {
+      const k = abvFindVal(r, ['khoji/new','khoji','new']); const p = r.programName || 'Unknown';
+      if (!m[k]) m[k] = {}; m[k][p] = (m[k][p] || 0) + 1;
+    }); return m;
+  }, [monthFiltered]);
+  const callTypePivot = React.useMemo(() => {
+    const m = {};
+    monthFiltered.forEach(r => {
+      const ct = r.callType || 'outgoing'; const p = r.programName || 'Unknown';
+      if (!m[ct]) m[ct] = {}; m[ct][p] = (m[ct][p] || 0) + 1;
+    }); return m;
+  }, [monthFiltered]);
+  const abvAttenders = React.useMemo(() => {
+    const m = {};
+    monthFiltered.forEach(r => { const a = r.attenderName || 'Unknown'; m[a] = (m[a] || 0) + 1; });
+    return Object.entries(m).sort((a,b) => b[1]-a[1]);
+  }, [monthFiltered]);
+
+  const AbvPivotTable = ({ title, rowMap, colHeaders, color = 'indigo' }) => {
+    const rows = Object.keys(rowMap).sort();
+    const colTotals = {}; colHeaders.forEach(p => { colTotals[p] = 0; });
+    rows.forEach(r => colHeaders.forEach(p => { colTotals[p] += (rowMap[r][p] || 0); }));
+    const grandTotal = Object.values(colTotals).reduce((a,b) => a+b, 0);
+    const chip = color === 'emerald' ? 'text-emerald-700 bg-emerald-50' : color === 'amber' ? 'text-amber-700 bg-amber-50' : 'text-indigo-700 bg-indigo-50';
+    return (
+      <div className="space-y-3">
+        <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest">{title}</p>
+        <div className="overflow-x-auto rounded-2xl border border-gray-100">
+          <table className="w-full text-xs">
+            <thead><tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-4 py-3 text-left text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">&#x2193; / Program &#x2192;</th>
+              {colHeaders.map(p => <th key={p} className="px-3 py-3 text-center text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">{p}</th>)}
+              <th className="px-3 py-3 text-center text-[10px] font-black text-gray-800 uppercase bg-slate-100">Total</th>
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map((row, i) => { const rowTotal = colHeaders.reduce((sum,p) => sum+(rowMap[row][p]||0), 0); return (
+                <tr key={i} className={(i%2===0?'bg-white':'bg-gray-50/40')+' hover:bg-blue-50/20 transition-colors'}>
+                  <td className="px-4 py-2.5 font-black text-slate-700 whitespace-nowrap">{row}</td>
+                  {colHeaders.map(p => <td key={p} className="px-3 py-2.5 text-center">{rowMap[row][p] ? <span className={'px-2 py-0.5 rounded-lg font-black text-xs '+chip}>{rowMap[row][p]}</span> : <span className="text-gray-200">&mdash;</span>}</td>)}
+                  <td className="px-3 py-2.5 text-center font-black text-slate-800 bg-gray-50">{rowTotal}</td>
+                </tr>);
+              })}
+              <tr className="bg-slate-100 border-t-2 border-slate-200">
+                <td className="px-4 py-2.5 font-black text-slate-800 uppercase text-[10px]">Grand Total</td>
+                {colHeaders.map(p => <td key={p} className="px-3 py-2.5 text-center font-black text-slate-700">{colTotals[p] || <span className="text-gray-300">&mdash;</span>}</td>)}
+                <td className="px-3 py-2.5 text-center font-black text-slate-900 bg-slate-200">{grandTotal}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -1884,10 +1997,51 @@ function AbhivyaktiTab({ programs }) {
           </div>
         </div>
         <div className="text-right">
-           <p className="text-xs font-bold text-white/60 mb-1 leading-none uppercase tracking-tighter">Live Tracker</p>
-           <p className="text-xl font-black leading-none">Abhivyakti 2026</p>
+          <p className="text-xs font-bold text-white/60 mb-1 leading-none uppercase tracking-tighter">Live Tracker</p>
+          <p className="text-xl font-black leading-none">Abhivyakti 2026</p>
         </div>
       </div>
+
+      {/* ── Analytics Section ── */}
+      {monthFiltered.length > 0 && (
+        <div className="space-y-8">
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Registration Analytics</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Total Registrations", val: monthFiltered.length, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+              { label: "Programs", val: abvPrograms.length, color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+              { label: "Attenders", val: abvAttenders.length, color: "bg-amber-50 text-amber-700 border-amber-200" },
+              { label: "Incoming Regs", val: monthFiltered.filter(r => r.callType === "incoming" || r.callType === "incoming f").length, color: "bg-blue-50 text-blue-700 border-blue-200" },
+            ].map(s => (
+              <div key={s.label} className={`${s.color} border rounded-2xl p-5 text-center`}>
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{s.label}</p>
+                <p className="text-4xl font-black mt-2">{s.val}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <AbvPivotTable title="Source Wise x Program (Registrations)" rowMap={sourcePivot} colHeaders={abvPrograms} color="indigo" />
+          </div>
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <AbvPivotTable title="Khoji / New Wise x Program (Registrations)" rowMap={khojiPivot} colHeaders={abvPrograms} color="emerald" />
+          </div>
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <AbvPivotTable title="Call Type x Program (Incoming vs Outgoing)" rowMap={callTypePivot} colHeaders={abvPrograms} color="amber" />
+          </div>
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <p className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">Attender Wise — Registrations Done</p>
+            <div className="flex flex-wrap gap-3">
+              {abvAttenders.map(([name, count]) => (
+                <div key={name} className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                  <span className="font-black text-emerald-800 text-sm">{name}</span>
+                  <span className="px-2 py-0.5 bg-emerald-600 text-white rounded-lg text-xs font-black">{count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight pt-4">Full Registration List</h3>
+        </div>
+      )}
 
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">

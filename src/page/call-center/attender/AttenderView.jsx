@@ -19,6 +19,10 @@ const STATUS_OPTIONS = [
   "Not possible", "Shivir done"
 ];
 
+const OBJECTION_REASONS = [
+  "Too Expensive", "Wrong Dates", "Location Too Far", "No Time", "Other"
+];
+
 const SOURCE_OPTIONS = [
   "Facebook", "Instagram", "WhatsApp", "YouTube", "Google",
   "Website", "Books", "Call Centre", "Program", "Other", "NA"
@@ -112,6 +116,13 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
 
   const handleSaveAndClose = async () => {
     if (saving) return; // Prevent double save
+    
+    // Objection Tracker Validation
+    if ((edited.status === "Not interested" || edited.status === "Not possible") && !edited.objectionReason) {
+      toast.error(`Please select a reason for "${edited.status}" before saving.`, { duration: 4000, position: 'top-center' });
+      return;
+    }
+    
     setSaving(true);
 
     // We update the local state for a snappy feel, but keep the modal open till DB confirms
@@ -420,6 +431,30 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
                   })}
                 </div>
               </div>
+
+              {/* ── Objection Tracker (Conditional) ── */}
+              {(edited.status === "Not interested" || edited.status === "Not possible") && (
+                <div className="space-y-3 p-4 bg-red-50 border border-red-100 rounded-2xl animate-in fade-in zoom-in duration-200">
+                  <label className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
+                    <AlertCircle size={13} /> Why are they {edited.status.toLowerCase()}?
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {OBJECTION_REASONS.map(reason => (
+                      <button
+                        key={reason}
+                        onClick={() => handleChange("objectionReason", edited.objectionReason === reason ? "" : reason)}
+                        className={`px-3 py-2 rounded-xl text-[11px] font-black border transition-all ${
+                          edited.objectionReason === reason
+                            ? "bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20 scale-105"
+                            : "bg-white text-red-600 border-red-200 hover:bg-red-100"
+                        }`}
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Note + Callback */}
