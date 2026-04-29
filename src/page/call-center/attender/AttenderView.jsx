@@ -116,13 +116,13 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
 
   const handleSaveAndClose = async () => {
     if (saving) return; // Prevent double save
-    
+
     // Objection Tracker Validation
     if ((edited.status === "Not interested" || edited.status === "Not possible") && !edited.objectionReason) {
       toast.error(`Please select a reason for "${edited.status}" before saving.`, { duration: 4000, position: 'top-center' });
       return;
     }
-    
+
     setSaving(true);
 
     // We update the local state for a snappy feel, but keep the modal open till DB confirms
@@ -318,9 +318,25 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
                         <label className="text-[10px] font-semibold text-purple-700 leading-snug block">{labelFor(field)}</label>
                         <textarea
                           value={edited[field] || ""}
-                          onChange={e => handleChange(field, e.target.value)}
-                          rows={2}
-                          className="w-full bg-white/80 border border-purple-100 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200 transition leading-relaxed placeholder:text-gray-300"
+                          onChange={e => {
+                            handleChange(field, e.target.value);
+                            e.target.style.height = 'inherit';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          onFocus={e => {
+                            e.target.style.height = 'inherit';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          ref={el => {
+                            if (el) {
+                              setTimeout(() => {
+                                el.style.height = 'inherit';
+                                el.style.height = `${el.scrollHeight}px`;
+                              }, 0);
+                            }
+                          }}
+                          rows={1}
+                          className="w-full bg-white/80 border border-purple-100 rounded-lg px-3 py-2 text-sm text-gray-700 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-purple-200 transition leading-relaxed placeholder:text-gray-300"
                           placeholder="No response..."
                         />
                       </div>
@@ -443,11 +459,10 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
                       <button
                         key={reason}
                         onClick={() => handleChange("objectionReason", edited.objectionReason === reason ? "" : reason)}
-                        className={`px-3 py-2 rounded-xl text-[11px] font-black border transition-all ${
-                          edited.objectionReason === reason
+                        className={`px-3 py-2 rounded-xl text-[11px] font-black border transition-all ${edited.objectionReason === reason
                             ? "bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/20 scale-105"
                             : "bg-white text-red-600 border-red-200 hover:bg-red-100"
-                        }`}
+                          }`}
                       >
                         {reason}
                       </button>
@@ -499,9 +514,24 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
                                 const updatedHistory = [...edited.history];
                                 updatedHistory[origIdx] = { ...updatedHistory[origIdx], remark: e.target.value };
                                 handleChange("history", updatedHistory);
+                                e.target.style.height = 'inherit';
+                                e.target.style.height = `${e.target.scrollHeight}px`;
                               }}
-                              rows={2}
-                              className="w-full bg-transparent text-sm text-gray-700 resize-none focus:outline-none focus:bg-slate-50 focus:ring-2 focus:ring-indigo-100 rounded-lg px-1 py-0.5 transition leading-relaxed placeholder:text-gray-300"
+                              onFocus={e => {
+                                e.target.style.height = 'inherit';
+                                e.target.style.height = `${e.target.scrollHeight}px`;
+                              }}
+                              ref={el => {
+                                if (el) {
+                                  // Setup initial height
+                                  setTimeout(() => {
+                                    el.style.height = 'inherit';
+                                    el.style.height = `${el.scrollHeight}px`;
+                                  }, 0);
+                                }
+                              }}
+                              rows={1}
+                              className="w-full bg-transparent text-sm text-gray-700 resize-none overflow-hidden focus:outline-none focus:bg-slate-50 focus:ring-2 focus:ring-indigo-100 rounded-lg px-1 py-0.5 transition leading-relaxed placeholder:text-gray-300"
                               placeholder="No note for this call..."
                             />
                           </div>
@@ -515,9 +545,25 @@ const EditModal = ({ row, attenderName = "Unknown", onSave, onDelete, onClose })
                 <div className="relative">
                   <textarea
                     value={edited.remark || ""}
-                    onChange={e => handleChange("remark", e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-white border-2 border-indigo-200 rounded-2xl text-sm font-medium resize-none focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition leading-relaxed"
+                    onChange={e => {
+                      handleChange("remark", e.target.value);
+                      e.target.style.height = 'inherit';
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
+                    onFocus={e => {
+                      e.target.style.height = 'inherit';
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
+                    ref={el => {
+                      if (el) {
+                        setTimeout(() => {
+                          el.style.height = 'inherit';
+                          el.style.height = `${el.scrollHeight}px`;
+                        }, 0);
+                      }
+                    }}
+                    rows={2}
+                    className="w-full px-4 py-3 bg-white border-2 border-indigo-200 rounded-2xl text-sm font-medium resize-none overflow-hidden focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition leading-relaxed"
                     placeholder="✏️ Add note for today's call..."
                   />
                   <span className="absolute bottom-3 right-3 text-[9px] text-indigo-300 font-black uppercase tracking-wider pointer-events-none">New Note</span>
@@ -657,12 +703,12 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
 
   const handleGetNumbers = async () => {
     if (!selectedProgramId) { toast.error("Select a program first."); return; }
-    
+
     // Check if program has subPrograms and one is selected
     const selectedProgram = programs.find(p => p.id === selectedProgramId);
     if (selectedProgram?.subPrograms?.length > 0 && !selectedSubProgram) {
-      toast.error("Please select a specific sheet first."); 
-      return; 
+      toast.error("Please select a specific sheet first.");
+      return;
     }
     // U5 fix: Warn before re-requesting if the sheet already has entries
     if (callLogs.length > 0) {
@@ -907,7 +953,7 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
               <option value="">Pick program...</option>
               {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            
+
             {/* Show sub-programs dropdown only if the selected program has them */}
             {programs.find(p => p.id === selectedProgramId)?.subPrograms?.length > 0 && (
               <select
@@ -967,40 +1013,40 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
 
       {/* Stats Bar */}
       <div className="bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-6 text-sm shrink-0 overflow-x-auto">
-          {[
-            { label: "Total", value: stats.total, color: "text-gray-700" },
-            { label: "Called", value: stats.called, color: "text-blue-600" },
-            { label: "Pending", value: stats.total - stats.called, color: "text-amber-600" },
-            { label: "Interested", value: stats.interested, color: "text-indigo-600" },
-            { label: "Reg.Done", value: stats.regDone, color: "text-emerald-600" },
-            { label: "Callbacks Due", value: stats.callbacks, color: "text-red-500" },
-            { label: "Outgoing", value: stats.outgoing, color: "text-gray-500" },
-            { label: "Incoming", value: stats.incoming, color: "text-green-600" },
-            { label: "Hot Leads", value: stats.hotLeads, color: "text-orange-500" },
-          ].map(s => (
-            <div key={s.label} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-gray-400 text-xs uppercase tracking-wider">{s.label}</span>
-              <span className={`font-black text-base ${s.color}`}>{s.value}</span>
-              {s.label === "Callbacks Due" && s.value > 0 && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-            </div>
-          ))}
+        {[
+          { label: "Total", value: stats.total, color: "text-gray-700" },
+          { label: "Called", value: stats.called, color: "text-blue-600" },
+          { label: "Pending", value: stats.total - stats.called, color: "text-amber-600" },
+          { label: "Interested", value: stats.interested, color: "text-indigo-600" },
+          { label: "Reg.Done", value: stats.regDone, color: "text-emerald-600" },
+          { label: "Callbacks Due", value: stats.callbacks, color: "text-red-500" },
+          { label: "Outgoing", value: stats.outgoing, color: "text-gray-500" },
+          { label: "Incoming", value: stats.incoming, color: "text-green-600" },
+          { label: "Hot Leads", value: stats.hotLeads, color: "text-orange-500" },
+        ].map(s => (
+          <div key={s.label} className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-gray-400 text-xs uppercase tracking-wider">{s.label}</span>
+            <span className={`font-black text-base ${s.color}`}>{s.value}</span>
+            {s.label === "Callbacks Due" && s.value > 0 && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
+          </div>
+        ))}
 
-          {/* Progress bar */}
-          {stats.total > 0 && (
-            <div className="ml-auto flex items-center gap-3 min-w-[200px]">
-              <span className="text-xs text-gray-400 whitespace-nowrap">Progress</span>
-              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.round((stats.called / stats.total) * 100)}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold text-gray-600 whitespace-nowrap">
-                {Math.round((stats.called / stats.total) * 100)}%
-              </span>
+        {/* Progress bar */}
+        {stats.total > 0 && (
+          <div className="ml-auto flex items-center gap-3 min-w-[200px]">
+            <span className="text-xs text-gray-400 whitespace-nowrap">Progress</span>
+            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                style={{ width: `${Math.round((stats.called / stats.total) * 100)}%` }}
+              />
             </div>
-          )}
-        </div>
+            <span className="text-xs font-bold text-gray-600 whitespace-nowrap">
+              {Math.round((stats.called / stats.total) * 100)}%
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Callback Reminder Banner — U4 fix: hidden when already viewing callbacks */}
       {stats.callbacks > 0 && filterStatus !== "Callback" && (
@@ -1104,7 +1150,7 @@ export default function AttenderView({ attenderId, attenderName, onExit }) {
                   const isHot = log.isHotLead;
                   const hasFollowup = log.callbackDate || log.status === "reminder" || log.status === "Next time";
                   const isCalled = !!log.status; // Changes are done if status is set
-                  
+
                   let rowBg = "hover:bg-green-50/50";
                   if (isDue) {
                     rowBg = "bg-red-100 border-l-[6px] border-l-red-600 shadow-sm";
